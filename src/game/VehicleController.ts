@@ -90,8 +90,8 @@ export class VehicleController {
     this.camera.attachControl(canvas, true);
   }
 
-  detachCamera(canvas: HTMLCanvasElement) {
-    this.camera.detachControl(canvas);
+  detachCamera(_canvas?: HTMLCanvasElement) {
+    this.camera.detachControl();
   }
 
   distanceTo(point: Vector3): number {
