@@ -20,14 +20,14 @@ const GRAVITY = new Vector3(0, -19.6, 0);
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5;
+// Havok character-controller position is the capsule center. In the runtime geometry
+// the feet are half the cylindrical height plus the spherical end-cap radius below it.
+const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
 const JUMP_CONTACT_RELEASE = 0.08;
-const GROUND_PROBE_START = 0.25;
-const GROUND_PROBE_LENGTH = 1.0;
-const MAX_GROUND_SNAP_DISTANCE = 0.65;
-const GROUND_SKIN = 0.01;
+const GROUND_PROBE_START = 0.20;
+const GROUND_PROBE_LENGTH = 0.50;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -137,6 +137,18 @@ export class PlayerController {
     return this.groundProbeDistance;
   }
 
+  getGroundPointY(): number {
+    return this.groundPointY;
+  }
+
+  getControllerCenterY(): number {
+    return this.physicsController.getPosition().y;
+  }
+
+  getComputedFeetY(): number {
+    return this.physicsController.getPosition().y - CAPSULE_FEET_OFFSET;
+  }
+
   getAnimationState(): CharacterAnimationState {
     return this.lastAnimationState;
   }
@@ -179,28 +191,8 @@ export class PlayerController {
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
-    let currentVelocity = this.physicsController.getVelocity();
+    const currentVelocity = this.physicsController.getVelocity();
     this.updateGroundProbe();
-
-    // If Havok leaves the capsule hovering slightly above a visible floor, correct the
-    // physics position itself. This keeps physics, gameplay feet, visual feet, and camera
-    // on one authoritative Y position instead of hiding the error with a visual offset.
-    if (
-      this.groundProbeHit &&
-      !this.jumpAscending &&
-      currentVelocity.y <= 0.1 &&
-      this.groundProbeDistance <= MAX_GROUND_SNAP_DISTANCE &&
-      Number.isFinite(this.groundPointY)
-    ) {
-      const p = this.physicsController.getPosition();
-      this.physicsController.setPosition(
-        new Vector3(p.x, this.groundPointY + CAPSULE_FEET_OFFSET + GROUND_SKIN, p.z),
-      );
-      currentVelocity = new Vector3(currentVelocity.x, 0, currentVelocity.z);
-      this.physicsController.setVelocity(currentVelocity);
-      this.syncRootFromPhysics();
-      this.updateGroundProbe();
-    }
 
     const havokSupported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
     const hasGroundContact = havokSupported || this.groundProbeHit;
@@ -248,7 +240,6 @@ export class PlayerController {
       this.physicsController.setPosition(launchPosition);
       outputVelocity.y = JUMP_SPEED;
       this.physicsController.setVelocity(outputVelocity);
-
       this.grounded = false;
       this.jumpAscending = true;
       this.coyoteTimer = 0;
