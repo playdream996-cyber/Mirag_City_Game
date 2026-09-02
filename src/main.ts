@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-geometryfix-2026-09-02-05";
+const BUILD_ID = "phase2-gravityfix-2026-09-02-06";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -55,7 +55,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "330px";
+  info.height = "350px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -77,6 +77,7 @@ async function bootstrap(): Promise<void> {
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
+      `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
       `Havok support: ${supportLabel(player.getSupportState())}`,
       `Ground probe: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
       `Y debug — center: ${player.getControllerCenterY().toFixed(3)} • feet: ${player.getComputedFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
