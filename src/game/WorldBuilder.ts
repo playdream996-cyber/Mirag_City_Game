@@ -8,12 +8,13 @@ import {
   StandardMaterial,
   Vector3,
 } from "@babylonjs/core";
+import { PhysicsManager } from "./PhysicsManager";
 
 export type WorldContext = {
   shadows: ShadowGenerator;
 };
 
-export function buildWorld(scene: Scene): WorldContext {
+export function buildWorld(scene: Scene, physics: PhysicsManager): WorldContext {
   const hemi = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
   hemi.intensity = 0.8;
 
@@ -37,12 +38,13 @@ export function buildWorld(scene: Scene): WorldContext {
     line: makeMaterial("roadLine", new Color3(0.95, 0.82, 0.20)),
   };
 
-  const ground = MeshBuilder.CreateGround("ground", { width: 280, height: 280 }, scene);
+  const ground = MeshBuilder.CreateBox("ground", { width: 280, height: 0.4, depth: 280 }, scene);
+  ground.position.y = -0.2;
   ground.material = materials.grass;
-  ground.checkCollisions = true;
   ground.receiveShadows = true;
+  physics.addStaticBox(ground);
 
-  const createBox = (
+  const createSolidBox = (
     name: string,
     position: Vector3,
     size: Vector3,
@@ -55,23 +57,40 @@ export function buildWorld(scene: Scene): WorldContext {
     );
     box.position = position;
     box.material = material;
-    box.checkCollisions = true;
     box.receiveShadows = true;
     shadows.addShadowCaster(box);
+    physics.addStaticBox(box);
+    return box;
+  };
+
+  const createDecorativeBox = (
+    name: string,
+    position: Vector3,
+    size: Vector3,
+    material: StandardMaterial,
+  ) => {
+    const box = MeshBuilder.CreateBox(
+      name,
+      { width: size.x, height: size.y, depth: size.z },
+      scene,
+    );
+    box.position = position;
+    box.material = material;
+    box.receiveShadows = true;
     return box;
   };
 
   const roadX = (z: number) => {
-    createBox("roadX", new Vector3(0, 0.06, z), new Vector3(280, 0.12, 18), materials.road);
+    createSolidBox("roadX", new Vector3(0, 0.06, z), new Vector3(280, 0.12, 18), materials.road);
     for (let x = -130; x <= 130; x += 16) {
-      createBox("lineX", new Vector3(x, 0.13, z), new Vector3(7, 0.03, 0.35), materials.line);
+      createDecorativeBox("lineX", new Vector3(x, 0.13, z), new Vector3(7, 0.03, 0.35), materials.line);
     }
   };
 
   const roadZ = (x: number) => {
-    createBox("roadZ", new Vector3(x, 0.06, 0), new Vector3(18, 0.12, 280), materials.road);
+    createSolidBox("roadZ", new Vector3(x, 0.06, 0), new Vector3(18, 0.12, 280), materials.road);
     for (let z = -130; z <= 130; z += 16) {
-      createBox("lineZ", new Vector3(x, 0.13, z), new Vector3(0.35, 0.03, 7), materials.line);
+      createDecorativeBox("lineZ", new Vector3(x, 0.13, z), new Vector3(0.35, 0.03, 7), materials.line);
     }
   };
 
@@ -99,7 +118,7 @@ export function buildWorld(scene: Scene): WorldContext {
           `building-${gx}-${gz}-${i}`,
           palette[Math.floor(Math.random() * palette.length)],
         );
-        createBox(
+        createSolidBox(
           "building",
           new Vector3(px, height / 2, pz),
           new Vector3(width, height, depth),
