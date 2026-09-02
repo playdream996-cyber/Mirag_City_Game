@@ -1,11 +1,13 @@
-import { CharacterSupportedState, Color4, Engine, Scene } from "@babylonjs/core";
+import { CharacterSupportedState, Color4, Engine, Scene, Vector3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
+import { CombatTarget } from "./game/CombatTarget";
 import { InputController } from "./game/InputController";
 import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-punchcombo-2026-09-03-16";
+const BUILD_ID = "phase2-meleedamage-2026-09-03-17";
+const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -33,12 +35,16 @@ async function bootstrap(): Promise<void> {
   const player = new PlayerController(scene, input);
   await player.initializeVisual();
 
+  // Temporary combat dummy placed directly in front of the initial player spawn.
+  // This validates damage timing before enemy/pedestrian AI is introduced.
+  const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
+
   player.attachCamera(canvas);
   scene.activeCamera = player.camera;
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "760px";
+  panel.width = "780px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -46,7 +52,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — PHASE 2 CHARACTER + MELEE";
+  title.text = "MIRAG CITY — PHASE 2 MELEE DAMAGE TEST";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -55,28 +61,55 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "430px";
+  info.height = "500px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.addControl(info);
 
+  let previousHitWindow = false;
+  let hitFeedbackTimer = 0;
+  let lastDamage = 0;
+
   engine.runRenderLoop(() => {
     const dt = engine.getDeltaTime() / 1000;
     player.update(dt);
+    combatTarget.update(dt);
+    hitFeedbackTimer = Math.max(0, hitFeedbackTimer - dt);
+
+    const hitWindow = player.isMeleeHitActive();
+    if (hitWindow && !previousHitWindow) {
+      const comboIndex = Math.max(0, Math.min(3, player.getComboStep() - 1));
+      const damage = COMBO_DAMAGE[comboIndex];
+      const facing = new Vector3(
+        Math.sin(player.root.rotation.y),
+        0,
+        Math.cos(player.root.rotation.y),
+      );
+
+      if (combatTarget.tryReceiveMeleeHit(player.root.position, facing, damage)) {
+        lastDamage = damage;
+        hitFeedbackTimer = 0.35;
+      }
+    }
+    previousHitWindow = hitWindow;
 
     const velocity = player.getVelocity();
     const desired = player.getDesiredVelocity();
     const probeDistance = player.getGroundProbeDistance();
     const floorY = player.getGroundPointY();
+    const targetDistance = combatTarget.getDistanceFrom(player.root.position);
+
     info.text = [
       `Build: ${BUILD_ID}`,
       "WASD Move • Shift Sprint • Space Jump • F Punch • Mouse Orbit",
+      `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
+      `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
       `Sprint key: ${player.isSprintActive() ? "DOWN" : "UP"}`,
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Attack triggered this frame: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
-      `Combo punch: ${player.getComboStep()}/4 • Hit window: ${player.isMeleeHitActive() ? "ACTIVE" : "CLOSED"}`,
+      `Combo punch: ${player.getComboStep()}/4 • Hit window: ${hitWindow ? "ACTIVE" : "CLOSED"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
       `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
