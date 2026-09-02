@@ -22,12 +22,16 @@ export class InputController {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
+    // Read the browser modifier state on every event so sprint does not depend
+    // on receiving Shift in a particular order relative to W/A/S/D.
+    this.state.sprint = event.shiftKey || event.code === "ShiftLeft" || event.code === "ShiftRight";
     this.applyKey(event.code, true, event.repeat);
     if (event.code === "Space") event.preventDefault();
   };
 
   private readonly onKeyUp = (event: KeyboardEvent) => {
     this.applyKey(event.code, false, false);
+    this.state.sprint = event.shiftKey;
     if (event.code === "Space") event.preventDefault();
   };
 
@@ -42,7 +46,7 @@ export class InputController {
   };
 
   constructor(scene: Scene) {
-    void scene; // Kept in the constructor contract for future input-context integration.
+    void scene;
     window.addEventListener("keydown", this.onKeyDown, { passive: false });
     window.addEventListener("keyup", this.onKeyUp, { passive: false });
     window.addEventListener("blur", this.onBlur);
@@ -94,7 +98,7 @@ export class InputController {
         break;
       case "ShiftLeft":
       case "ShiftRight":
-        this.state.sprint = isDown;
+        if (isDown) this.state.sprint = true;
         break;
       case "Space":
         if (isDown && !isRepeat) this.state.jumpPressed = true;
