@@ -6,7 +6,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-meleedamage-2026-09-03-17";
+const BUILD_ID = "phase2-enemyhp-2026-09-03-18";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 
 function supportLabel(state: CharacterSupportedState): string {
@@ -35,8 +35,6 @@ async function bootstrap(): Promise<void> {
   const player = new PlayerController(scene, input);
   await player.initializeVisual();
 
-  // Temporary combat dummy placed directly in front of the initial player spawn.
-  // This validates damage timing before enemy/pedestrian AI is introduced.
   const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
 
   player.attachCamera(canvas);
