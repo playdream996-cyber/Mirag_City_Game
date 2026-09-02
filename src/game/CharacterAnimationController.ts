@@ -23,6 +23,19 @@ const NAME_HINTS: Record<CharacterAnimationState, string[]> = {
   punch2: ["punch_cross", "cross", "punch"],
 };
 
+// Quaternius clips are authored at a cinematic/neutral pace. These multipliers
+// make gameplay feel responsive while leaving physics/movement speeds unchanged.
+const PLAYBACK_SPEED: Record<CharacterAnimationState, number> = {
+  idle: 1.0,
+  walk: 1.25,
+  run: 1.35,
+  jump: 1.25,
+  fall: 1.10,
+  land: 1.50,
+  punch1: 1.60,
+  punch2: 1.60,
+};
+
 export class CharacterAnimationController {
   private readonly clips = new Map<CharacterAnimationState, AnimationGroup>();
   private activeState: CharacterAnimationState | null = null;
@@ -50,7 +63,7 @@ export class CharacterAnimationController {
     }
 
     const loop = state === "idle" || state === "walk" || state === "run" || state === "fall";
-    next.start(loop, 1.0, next.from, next.to, false);
+    next.start(loop, PLAYBACK_SPEED[state], next.from, next.to, false);
     this.activeClip = next;
   }
 
