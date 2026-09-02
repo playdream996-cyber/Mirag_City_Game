@@ -32,10 +32,11 @@ const GROUND_PENETRATION_TOLERANCE = 0.03;
 const INITIAL_SPAWN = new Vector3(8, 0.12, 8);
 
 const LANDING_DURATION = 0.32;
-const ATTACK_DURATION = 0.44;
-const ATTACK_HIT_START = 0.11;
-const ATTACK_HIT_END = 0.28;
-const COMBO_RESET_TIME = 0.70;
+const ATTACK_DURATION = 0.30;
+const ATTACK_HIT_START = 0.055;
+const ATTACK_HIT_END = 0.19;
+const ATTACK_QUEUE_OPEN = 0.12;
+const COMBO_RESET_TIME = 0.85;
 const ATTACK_MOVE_MULTIPLIER = 0.35;
 
 export class PlayerController {
@@ -63,7 +64,8 @@ export class PlayerController {
   private landingTimer = 0;
   private attackTimer = 0;
   private comboTimer = 0;
-  private comboStep: 0 | 1 = 0;
+  private comboStep: 0 | 1 | 2 | 3 = 0;
+  private attackQueued = false;
   private meleeHitActive = false;
   private lastAttackTriggered = false;
 
@@ -139,6 +141,8 @@ export class PlayerController {
     this.landingTimer = 0;
     this.attackTimer = 0;
     this.comboTimer = 0;
+    this.comboStep = 0;
+    this.attackQueued = false;
     this.meleeHitActive = false;
   }
 
@@ -233,7 +237,13 @@ export class PlayerController {
     this.landingTimer = Math.max(0, this.landingTimer - safeDt);
     this.attackTimer = Math.max(0, this.attackTimer - safeDt);
     this.comboTimer = Math.max(0, this.comboTimer - safeDt);
-    if (this.comboTimer === 0 && this.attackTimer === 0) this.comboStep = 0;
+
+    if (this.attackTimer === 0 && this.attackQueued && this.grounded && this.comboTimer > 0) {
+      this.advanceComboAttack();
+    } else if (this.comboTimer === 0 && this.attackTimer === 0) {
+      this.comboStep = 0;
+      this.attackQueued = false;
+    }
 
     const attackElapsed = ATTACK_DURATION - this.attackTimer;
     this.meleeHitActive =
@@ -309,12 +319,13 @@ export class PlayerController {
       this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - safeDt);
     }
 
-    if (this.input.consumeAttack() && this.grounded && this.attackTimer <= 0) {
-      this.comboStep = this.comboTimer > 0 ? (this.comboStep === 0 ? 1 : 0) : 0;
-      this.attackTimer = ATTACK_DURATION;
-      this.comboTimer = COMBO_RESET_TIME;
-      this.landingTimer = 0;
-      this.lastAttackTriggered = true;
+    if (this.input.consumeAttack() && this.grounded) {
+      if (this.attackTimer <= 0) {
+        if (this.comboTimer > 0) this.advanceComboAttack();
+        else this.startAttack(0);
+      } else if (attackElapsed >= ATTACK_QUEUE_OPEN) {
+        this.attackQueued = true;
+      }
     }
 
     const cameraForward = this.camera.target.subtract(this.camera.position);
@@ -346,6 +357,7 @@ export class PlayerController {
       this.jumpBufferTimer = 0;
       this.landingTimer = 0;
       this.attackTimer = 0;
+      this.attackQueued = false;
       this.meleeHitActive = false;
       this.lastJumpTriggered = true;
     } else if (!this.grounded) {
@@ -385,6 +397,20 @@ export class PlayerController {
     this.updateAnimation(hasMovement, state.sprint, this.verticalVelocity);
   }
 
+  private startAttack(step: 0 | 1 | 2 | 3): void {
+    this.comboStep = step;
+    this.attackTimer = ATTACK_DURATION;
+    this.comboTimer = COMBO_RESET_TIME;
+    this.landingTimer = 0;
+    this.attackQueued = false;
+    this.lastAttackTriggered = true;
+  }
+
+  private advanceComboAttack(): void {
+    const nextStep = ((this.comboStep + 1) % 4) as 0 | 1 | 2 | 3;
+    this.startAttack(nextStep);
+  }
+
   private syncRootFromPhysics(): void {
     const controllerPosition = this.physicsController.getPosition();
     this.root.position.copyFromFloats(
@@ -422,8 +448,9 @@ export class PlayerController {
 
   private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
     let next: CharacterAnimationState;
-    if (this.attackTimer > 0) next = this.comboStep === 0 ? "punch1" : "punch2";
-    else if (!this.grounded) next = verticalVelocity > 0.4 ? "jump" : "fall";
+    if (this.attackTimer > 0) {
+      next = (["punch1", "punch2", "punch3", "punch4"] as CharacterAnimationState[])[this.comboStep];
+    } else if (!this.grounded) next = verticalVelocity > 0.4 ? "jump" : "fall";
     else if (this.landingTimer > 0) next = "land";
     else if (!hasMovement) next = "idle";
     else next = sprint ? "run" : "walk";
