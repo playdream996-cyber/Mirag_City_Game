@@ -40,6 +40,7 @@ export class PlayerController {
   private jumpBufferTimer = 0;
   private lastJumpTriggered = false;
   private jumpAscending = false;
+  private lastSupportState: CharacterSupportedState = CharacterSupportedState.UNSUPPORTED;
 
   constructor(
     private readonly scene: Scene,
@@ -116,6 +117,12 @@ export class PlayerController {
     return this.grounded;
   }
 
+  getSupportStateLabel(): string {
+    if (this.lastSupportState === CharacterSupportedState.SUPPORTED) return "SUPPORTED";
+    if (this.lastSupportState === CharacterSupportedState.SLIDING) return "SLIDING";
+    return "UNSUPPORTED";
+  }
+
   getAnimationState(): CharacterAnimationState {
     return this.lastAnimationState;
   }
@@ -157,12 +164,13 @@ export class PlayerController {
 
     const up = Vector3.Up();
     const support = this.physicsController.checkSupport(safeDt, DOWN);
-    const supported = support.supportedState === CharacterSupportedState.SUPPORTED;
+    this.lastSupportState = support.supportedState;
 
-    // Do not let the pre-jump support result instantly re-ground the controller
-    // while it still has upward velocity.
+    // Havok can report SLIDING for a valid floor contact. That is still grounded for
+    // gameplay purposes; only UNSUPPORTED means there is no usable surface below us.
+    const hasGroundContact = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
     const currentVelocity = this.physicsController.getVelocity();
-    this.grounded = supported && !this.jumpAscending && currentVelocity.y <= 0.1;
+    this.grounded = hasGroundContact && !this.jumpAscending && currentVelocity.y <= 0.1;
 
     if (this.grounded) this.coyoteTimer = COYOTE_TIME;
     else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
@@ -200,8 +208,6 @@ export class PlayerController {
     }
 
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
-      // Separate the capsule from the current supporting surface first. This avoids
-      // Havok resolving the launch impulse back into the same contact on this frame.
       const launchPosition = this.physicsController.getPosition().add(
         new Vector3(0, JUMP_CONTACT_RELEASE, 0),
       );
