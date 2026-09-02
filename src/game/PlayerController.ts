@@ -80,8 +80,8 @@ export class PlayerController {
     this.camera.attachControl(canvas, true);
   }
 
-  detachCamera(canvas: HTMLCanvasElement): void {
-    this.camera.detachControl(canvas);
+  detachCamera(_canvas?: HTMLCanvasElement): void {
+    this.camera.detachControl();
   }
 
   setEnabled(value: boolean): void {
@@ -168,7 +168,6 @@ export class PlayerController {
         this.grounded = false;
       }
     } else {
-      // Preserve vertical momentum while giving the player deliberately weaker air control.
       outputVelocity = currentVelocity.clone();
       outputVelocity.x = Scalar.Lerp(
         currentVelocity.x,
