@@ -2,12 +2,14 @@ import { AnimationGroup } from "@babylonjs/core";
 
 export type CharacterAnimationState = "idle" | "walk" | "run" | "jump" | "fall";
 
+// Exact Quaternius Universal Animation Library names come first. Generic hints
+// remain as fallbacks so a future character/animation set can still work.
 const NAME_HINTS: Record<CharacterAnimationState, string[]> = {
-  idle: ["idle", "stand", "breathing"],
-  walk: ["walk", "walking"],
-  run: ["run", "running", "sprint"],
-  jump: ["jump", "jumpstart", "takeoff"],
-  fall: ["fall", "air", "falling", "jumpidle"],
+  idle: ["idle_loop", "idle", "stand", "breathing"],
+  walk: ["walk_loop", "walk", "walking"],
+  run: ["sprint_loop", "jog_fwd_loop", "run", "running", "sprint"],
+  jump: ["jump_start", "jump_loop", "jump", "jumpstart", "takeoff"],
+  fall: ["jump_loop", "fall", "air", "falling", "jumpidle"],
 };
 
 export class CharacterAnimationController {
