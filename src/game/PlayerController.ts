@@ -48,6 +48,7 @@ export class PlayerController {
   private groundProbeHit = false;
   private groundProbeDistance = Number.POSITIVE_INFINITY;
   private groundPointY = Number.NaN;
+  private visualFeetCorrectionY = 0;
 
   constructor(
     private readonly scene: Scene,
@@ -115,6 +116,7 @@ export class PlayerController {
     this.physicsController.setPosition(position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)));
     this.physicsController.setVelocity(Vector3.Zero());
     this.verticalVelocity = 0;
+    this.visualFeetCorrectionY = 0;
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
   }
@@ -149,6 +151,14 @@ export class PlayerController {
 
   getComputedFeetY(): number {
     return this.physicsController.getPosition().y - CAPSULE_FEET_OFFSET;
+  }
+
+  getVisualFeetY(): number {
+    return this.root.position.y;
+  }
+
+  getVisualFeetCorrectionY(): number {
+    return this.visualFeetCorrectionY;
   }
 
   getVerticalVelocity(): number {
@@ -188,12 +198,6 @@ export class PlayerController {
     this.syncRootFromPhysics();
     this.updateGroundProbe();
 
-    this.camera.target = Vector3.Lerp(
-      this.camera.target,
-      this.root.position.add(new Vector3(0, 1.25, 0)),
-      Math.min(1, safeDt * 10),
-    );
-
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
@@ -204,9 +208,23 @@ export class PlayerController {
     if (this.grounded) {
       this.coyoteTimer = COYOTE_TIME;
       if (this.verticalVelocity < 0) this.verticalVelocity = 0;
+
+      // Keep Havok's internal capsule untouched, but reconcile the gameplay/visual feet
+      // to the actual detected surface. Persist this correction during the whole jump so
+      // takeoff and landing use the same visual baseline instead of accumulating height.
+      if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
+        this.visualFeetCorrectionY = this.groundPointY - this.getComputedFeetY();
+        this.syncRootFromPhysics();
+      }
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
     }
+
+    this.camera.target = Vector3.Lerp(
+      this.camera.target,
+      this.root.position.add(new Vector3(0, 1.25, 0)),
+      Math.min(1, safeDt * 10),
+    );
 
     if (this.input.consumeJump()) {
       this.jumpBufferTimer = JUMP_BUFFER_TIME;
@@ -219,8 +237,7 @@ export class PlayerController {
     if (cameraForward.lengthSquared() > 0.0001) cameraForward.normalize();
     else cameraForward.copyFromFloats(0, 0, 1);
 
-    // Explicit right vector for Babylon's left-handed world:
-    // right = (forward.z, 0, -forward.x)
+    // Explicit camera-right vector for Babylon's left-handed coordinates.
     const cameraRight = new Vector3(cameraForward.z, 0, -cameraForward.x).normalize();
 
     const inputMove = Vector3.Zero();
@@ -238,8 +255,6 @@ export class PlayerController {
     this.lastDesiredVelocity.copyFrom(desiredVelocity);
 
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
-      // Jump is velocity-only. Do not move the controller upward manually;
-      // repeated positional nudges caused permanent height creep after each jump.
       this.verticalVelocity = JUMP_SPEED;
       this.grounded = false;
       this.coyoteTimer = 0;
@@ -284,8 +299,10 @@ export class PlayerController {
 
   private syncRootFromPhysics(): void {
     const controllerPosition = this.physicsController.getPosition();
-    this.root.position.copyFrom(
-      controllerPosition.subtract(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
+    this.root.position.copyFromFloats(
+      controllerPosition.x,
+      controllerPosition.y - CAPSULE_FEET_OFFSET + this.visualFeetCorrectionY,
+      controllerPosition.z,
     );
   }
 
