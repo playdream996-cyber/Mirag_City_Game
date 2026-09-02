@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "470px";
+  panel.width = "540px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -42,7 +42,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "128px";
+  info.height = "180px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -52,8 +52,13 @@ async function bootstrap(): Promise<void> {
     const dt = engine.getDeltaTime() / 1000;
     player.update(dt);
 
+    const velocity = player.getVelocity();
+    const desired = player.getDesiredVelocity();
     info.text = [
       "WASD Move • Shift Sprint • Space Jump • Mouse Orbit",
+      `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
+      `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
+      `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
       `Physics: Havok PhysicsCharacterController • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
       `Animation state: ${player.getAnimationState().toUpperCase()}`,
       `Visual: ${player.isUsingFallbackVisual() ? "fallback capsule (add public/assets/characters/player.glb)" : "player.glb"}`,
