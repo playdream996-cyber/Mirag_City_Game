@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-penetrationfix-2026-09-02-13";
+const BUILD_ID = "phase2-melee-2026-09-02-14";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "720px";
+  panel.width = "760px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -46,7 +46,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — PHASE 2 CHARACTER FOUNDATION";
+  title.text = "MIRAG CITY — PHASE 2 CHARACTER + MELEE";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -55,7 +55,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "375px";
+  info.height = "430px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -71,10 +71,12 @@ async function bootstrap(): Promise<void> {
     const floorY = player.getGroundPointY();
     info.text = [
       `Build: ${BUILD_ID}`,
-      "WASD Move • Shift Sprint • Space Jump • Mouse Orbit",
+      "WASD Move • Shift Sprint • Space Jump • F Punch • Mouse Orbit",
       `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
       `Sprint key: ${player.isSprintActive() ? "DOWN" : "UP"}`,
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
+      `Attack triggered this frame: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
+      `Combo punch: ${player.getComboStep()} • Hit window: ${player.isMeleeHitActive() ? "ACTIVE" : "CLOSED"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
       `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
