@@ -8,6 +8,7 @@ export type InputState = {
   sprint: boolean;
   jumpPressed: boolean;
   interactPressed: boolean;
+  attackPressed: boolean;
 };
 
 export class InputController {
@@ -19,11 +20,10 @@ export class InputController {
     sprint: false,
     jumpPressed: false,
     interactPressed: false,
+    attackPressed: false,
   };
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    // Read the browser modifier state on every event so sprint does not depend
-    // on receiving Shift in a particular order relative to W/A/S/D.
     this.state.sprint = event.shiftKey || event.code === "ShiftLeft" || event.code === "ShiftRight";
     this.applyKey(event.code, true, event.repeat);
     if (event.code === "Space") event.preventDefault();
@@ -43,6 +43,7 @@ export class InputController {
     this.state.sprint = false;
     this.state.jumpPressed = false;
     this.state.interactPressed = false;
+    this.state.attackPressed = false;
   };
 
   constructor(scene: Scene) {
@@ -61,6 +62,12 @@ export class InputController {
   consumeInteract(): boolean {
     const pressed = this.state.interactPressed;
     this.state.interactPressed = false;
+    return pressed;
+  }
+
+  consumeAttack(): boolean {
+    const pressed = this.state.attackPressed;
+    this.state.attackPressed = false;
     return pressed;
   }
 
@@ -105,6 +112,9 @@ export class InputController {
         break;
       case "KeyE":
         if (isDown && !isRepeat) this.state.interactPressed = true;
+        break;
+      case "KeyF":
+        if (isDown && !isRepeat) this.state.attackPressed = true;
         break;
     }
   }
