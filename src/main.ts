@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "540px";
+  panel.width = "560px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -42,7 +42,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "180px";
+  info.height = "220px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -57,6 +57,8 @@ async function bootstrap(): Promise<void> {
     info.text = [
       "WASD Move • Shift Sprint • Space Jump • Mouse Orbit",
       `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
+      `Sprint key: ${player.isSprintActive() ? "DOWN" : "UP"}`,
+      `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
       `Physics: Havok PhysicsCharacterController • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
@@ -68,7 +70,10 @@ async function bootstrap(): Promise<void> {
   });
 
   window.addEventListener("resize", () => engine.resize());
-  window.addEventListener("beforeunload", () => physics.dispose());
+  window.addEventListener("beforeunload", () => {
+    input.dispose();
+    physics.dispose();
+  });
 }
 
 bootstrap().catch((error) => {
