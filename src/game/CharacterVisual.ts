@@ -30,11 +30,11 @@ export class CharacterVisual {
         scene,
       );
 
-      for (const mesh of result.meshes) {
-        if (mesh === result.meshes[0]) continue;
-        mesh.parent = visualRoot;
-        mesh.isPickable = false;
-      }
+      // Keep the GLB hierarchy intact so skeletons, skinning, sockets, and nested transforms
+      // remain valid. Only attach the imported top-level root to our gameplay visual root.
+      const importedRoot = result.meshes[0];
+      if (importedRoot) importedRoot.parent = visualRoot;
+      for (const mesh of result.meshes) mesh.isPickable = false;
 
       this.normalizeImportedModel(result.meshes, visualRoot);
       const animator = new CharacterAnimationController(result.animationGroups);
@@ -90,8 +90,6 @@ export class CharacterVisual {
     const targetHeight = 1.85;
     const scale = targetHeight / height;
     visualRoot.scaling.setAll(scale);
-
-    // After scaling, keep the character's feet at the controller origin.
     visualRoot.position.y = -min.y * scale;
   }
 }
