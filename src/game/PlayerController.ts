@@ -19,7 +19,9 @@ const GRAVITY = new Vector3(0, -19.6, 0);
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
+// Babylon PhysicsCharacterController uses capsuleHeight as the full capsule height,
+// matching MeshBuilder.CreateCapsule({ height }). The center-to-feet offset is half height.
+const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
 const JUMP_CONTACT_RELEASE = 0.08;
@@ -117,10 +119,8 @@ export class PlayerController {
     return this.grounded;
   }
 
-  getSupportStateLabel(): string {
-    if (this.lastSupportState === CharacterSupportedState.SUPPORTED) return "SUPPORTED";
-    if (this.lastSupportState === CharacterSupportedState.SLIDING) return "SLIDING";
-    return "UNSUPPORTED";
+  getSupportState(): CharacterSupportedState {
+    return this.lastSupportState;
   }
 
   getAnimationState(): CharacterAnimationState {
@@ -165,12 +165,10 @@ export class PlayerController {
     const up = Vector3.Up();
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
+    const supported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
 
-    // Havok can report SLIDING for a valid floor contact. That is still grounded for
-    // gameplay purposes; only UNSUPPORTED means there is no usable surface below us.
-    const hasGroundContact = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
     const currentVelocity = this.physicsController.getVelocity();
-    this.grounded = hasGroundContact && !this.jumpAscending && currentVelocity.y <= 0.1;
+    this.grounded = supported && !this.jumpAscending && currentVelocity.y <= 0.1;
 
     if (this.grounded) this.coyoteTimer = COYOTE_TIME;
     else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
