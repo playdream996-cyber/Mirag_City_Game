@@ -1,6 +1,14 @@
 import { AnimationGroup } from "@babylonjs/core";
 
-export type CharacterAnimationState = "idle" | "walk" | "run" | "jump" | "fall";
+export type CharacterAnimationState =
+  | "idle"
+  | "walk"
+  | "run"
+  | "jump"
+  | "fall"
+  | "land"
+  | "punch1"
+  | "punch2";
 
 // Exact Quaternius Universal Animation Library names come first. Generic hints
 // remain as fallbacks so a future character/animation set can still work.
@@ -10,6 +18,9 @@ const NAME_HINTS: Record<CharacterAnimationState, string[]> = {
   run: ["sprint_loop", "jog_fwd_loop", "run", "running", "sprint"],
   jump: ["jump_start", "jump_loop", "jump", "jumpstart", "takeoff"],
   fall: ["jump_loop", "fall", "air", "falling", "jumpidle"],
+  land: ["jump_land", "land", "landing"],
+  punch1: ["punch_jab", "jab", "punch"],
+  punch2: ["punch_cross", "cross", "punch"],
 };
 
 export class CharacterAnimationController {
@@ -52,6 +63,8 @@ export class CharacterAnimationController {
     if (state === "walk") return this.clips.get("run") ?? this.clips.get("idle");
     if (state === "jump") return this.clips.get("fall") ?? this.clips.get("idle");
     if (state === "fall") return this.clips.get("jump") ?? this.clips.get("idle");
+    if (state === "land") return this.clips.get("idle");
+    if (state === "punch1" || state === "punch2") return this.clips.get("idle");
     return this.clips.get("idle");
   }
 
