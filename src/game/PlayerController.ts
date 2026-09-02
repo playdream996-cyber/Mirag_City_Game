@@ -22,7 +22,6 @@ const ZERO_GRAVITY = Vector3.Zero();
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-// Runtime Havok capsule center-to-feet distance for this controller geometry.
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
@@ -222,7 +221,8 @@ export class PlayerController {
     else cameraForward.copyFromFloats(0, 0, 1);
 
     const up = Vector3.Up();
-    const cameraRight = Vector3.Cross(cameraForward, up).normalize();
+    // In Babylon's left-handed coordinate system, Up x Forward gives camera-right.
+    const cameraRight = Vector3.Cross(up, cameraForward).normalize();
     const inputMove = Vector3.Zero();
     const state = this.input.state;
 
@@ -271,9 +271,6 @@ export class PlayerController {
     );
 
     this.physicsController.setVelocity(outputVelocity);
-
-    // Gravity is accumulated explicitly above so it cannot disappear between controller ticks.
-    // Pass zero gravity here to avoid applying acceleration twice.
     this.physicsController.integrate(safeDt, support, ZERO_GRAVITY);
 
     if (hasMovement) {
