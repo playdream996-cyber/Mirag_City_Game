@@ -16,6 +16,7 @@ const RUN_SPEED = 8.2;
 const AIR_CONTROL = 5.0;
 const JUMP_SPEED = 7.2;
 const GRAVITY = new Vector3(0, -19.6, 0);
+const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
 // Havok's capsuleHeight is the straight section between the spherical end caps.
@@ -33,6 +34,7 @@ export class PlayerController {
   private grounded = false;
   private visualFallback = true;
   private lastAnimationState: CharacterAnimationState = "idle";
+  private lastDesiredVelocity = Vector3.Zero();
 
   constructor(
     private readonly scene: Scene,
@@ -115,6 +117,19 @@ export class PlayerController {
     return this.lastAnimationState;
   }
 
+  getVelocity(): Vector3 {
+    return this.physicsController.getVelocity().clone();
+  }
+
+  getDesiredVelocity(): Vector3 {
+    return this.lastDesiredVelocity.clone();
+  }
+
+  hasMovementInput(): boolean {
+    const state = this.input.state;
+    return state.forward || state.back || state.left || state.right;
+  }
+
   update(dt: number): void {
     if (!this.enabled) return;
     const safeDt = Math.min(dt, 1 / 20);
@@ -131,7 +146,8 @@ export class PlayerController {
     );
 
     const up = Vector3.Up();
-    const support = this.physicsController.checkSupport(safeDt, GRAVITY);
+    // checkSupport expects a direction vector, not gravity acceleration.
+    const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.grounded = support.supportedState === CharacterSupportedState.SUPPORTED;
 
     const cameraForward = this.camera.target.subtract(this.camera.position);
@@ -152,19 +168,15 @@ export class PlayerController {
 
     const desiredSpeed = state.sprint ? RUN_SPEED : WALK_SPEED;
     const desiredVelocity = hasMovement ? inputMove.scale(desiredSpeed) : Vector3.Zero();
+    this.lastDesiredVelocity.copyFrom(desiredVelocity);
+
     const currentVelocity = this.physicsController.getVelocity();
     let outputVelocity: Vector3;
 
     if (this.grounded) {
-      outputVelocity = this.physicsController.calculateMovement(
-        safeDt,
-        cameraForward,
-        support.averageSurfaceNormal,
-        currentVelocity,
-        support.averageSurfaceVelocity,
-        desiredVelocity,
-        up,
-      );
+      // Keep the first grounded implementation intentionally explicit and reliable:
+      // horizontal player intent directly controls X/Z while Havok still resolves contacts.
+      outputVelocity = new Vector3(desiredVelocity.x, 0, desiredVelocity.z);
 
       if (this.input.consumeJump()) {
         outputVelocity.y = JUMP_SPEED;
