@@ -7,6 +7,7 @@ export type InputState = {
   right: boolean;
   sprint: boolean;
   jumpPressed: boolean;
+  interactPressed: boolean;
 };
 
 export class InputController {
@@ -17,6 +18,7 @@ export class InputController {
     right: false,
     sprint: false,
     jumpPressed: false,
+    interactPressed: false,
   };
 
   constructor(scene: Scene) {
@@ -29,13 +31,20 @@ export class InputController {
       if (key === "a") this.state.left = isDown;
       if (key === "d") this.state.right = isDown;
       if (key === "shift") this.state.sprint = isDown;
-      if (key === " " && isDown) this.state.jumpPressed = true;
+      if (key === " " && isDown && !kbInfo.event.repeat) this.state.jumpPressed = true;
+      if (key === "e" && isDown && !kbInfo.event.repeat) this.state.interactPressed = true;
     });
   }
 
   consumeJump(): boolean {
     const pressed = this.state.jumpPressed;
     this.state.jumpPressed = false;
+    return pressed;
+  }
+
+  consumeInteract(): boolean {
+    const pressed = this.state.interactPressed;
+    this.state.interactPressed = false;
     return pressed;
   }
 }
