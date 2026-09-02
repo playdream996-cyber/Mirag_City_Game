@@ -1,4 +1,4 @@
-import { KeyboardEventTypes, Scene } from "@babylonjs/core";
+import { Scene } from "@babylonjs/core";
 
 export type InputState = {
   forward: boolean;
@@ -21,22 +21,31 @@ export class InputController {
     interactPressed: false,
   };
 
+  private readonly onKeyDown = (event: KeyboardEvent) => {
+    this.applyKey(event.code, true, event.repeat);
+    if (event.code === "Space") event.preventDefault();
+  };
+
+  private readonly onKeyUp = (event: KeyboardEvent) => {
+    this.applyKey(event.code, false, false);
+    if (event.code === "Space") event.preventDefault();
+  };
+
+  private readonly onBlur = () => {
+    this.state.forward = false;
+    this.state.back = false;
+    this.state.left = false;
+    this.state.right = false;
+    this.state.sprint = false;
+    this.state.jumpPressed = false;
+    this.state.interactPressed = false;
+  };
+
   constructor(scene: Scene) {
-    scene.onKeyboardObservable.add((kbInfo) => {
-      const isDown = kbInfo.type === KeyboardEventTypes.KEYDOWN;
-      const key = kbInfo.event.key.toLowerCase();
-
-      if (key === "w") this.state.forward = isDown;
-      if (key === "s") this.state.back = isDown;
-      if (key === "a") this.state.left = isDown;
-      if (key === "d") this.state.right = isDown;
-      if (key === "shift") this.state.sprint = isDown;
-
-      // Babylon's IKeyboardEvent typing does not expose KeyboardEvent.repeat,
-      // so edge-triggered actions are latched only when their previous state is clear.
-      if (key === " " && isDown && !this.state.jumpPressed) this.state.jumpPressed = true;
-      if (key === "e" && isDown && !this.state.interactPressed) this.state.interactPressed = true;
-    });
+    void scene; // Kept in the constructor contract for future input-context integration.
+    window.addEventListener("keydown", this.onKeyDown, { passive: false });
+    window.addEventListener("keyup", this.onKeyUp, { passive: false });
+    window.addEventListener("blur", this.onBlur);
   }
 
   consumeJump(): boolean {
@@ -49,5 +58,50 @@ export class InputController {
     const pressed = this.state.interactPressed;
     this.state.interactPressed = false;
     return pressed;
+  }
+
+  isSprintActive(): boolean {
+    return this.state.sprint;
+  }
+
+  hasJumpQueued(): boolean {
+    return this.state.jumpPressed;
+  }
+
+  dispose(): void {
+    window.removeEventListener("keydown", this.onKeyDown);
+    window.removeEventListener("keyup", this.onKeyUp);
+    window.removeEventListener("blur", this.onBlur);
+  }
+
+  private applyKey(code: string, isDown: boolean, isRepeat: boolean): void {
+    switch (code) {
+      case "KeyW":
+      case "ArrowUp":
+        this.state.forward = isDown;
+        break;
+      case "KeyS":
+      case "ArrowDown":
+        this.state.back = isDown;
+        break;
+      case "KeyA":
+      case "ArrowLeft":
+        this.state.left = isDown;
+        break;
+      case "KeyD":
+      case "ArrowRight":
+        this.state.right = isDown;
+        break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        this.state.sprint = isDown;
+        break;
+      case "Space":
+        if (isDown && !isRepeat) this.state.jumpPressed = true;
+        break;
+      case "KeyE":
+        if (isDown && !isRepeat) this.state.interactPressed = true;
+        break;
+    }
   }
 }
