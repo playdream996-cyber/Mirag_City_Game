@@ -3,6 +3,8 @@ import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylon
 import { InputController } from "./game/InputController";
 import { PlayerController } from "./game/PlayerController";
 import { VehicleController } from "./game/VehicleController";
+import { TrafficManager } from "./game/TrafficManager";
+import { PedestrianManager } from "./game/PedestrianManager";
 import { buildWorld } from "./game/WorldBuilder";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -17,6 +19,8 @@ buildWorld(scene);
 const input = new InputController(scene);
 const player = new PlayerController(scene, input);
 const vehicle = new VehicleController(scene, input, new Vector3(14, 0.65, 8));
+const traffic = new TrafficManager(scene);
+const pedestrians = new PedestrianManager(scene);
 
 player.attachCamera(canvas);
 scene.activeCamera = player.camera;
@@ -25,7 +29,7 @@ let driving = false;
 
 const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 const panel = new StackPanel();
-panel.width = "390px";
+panel.width = "420px";
 panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 panel.paddingTop = "18px";
@@ -33,7 +37,7 @@ panel.paddingLeft = "18px";
 ui.addControl(panel);
 
 const title = new TextBlock();
-title.text = "MIRAG CITY — PHASE 3";
+title.text = "MIRAG CITY — PHASE 4";
 title.height = "36px";
 title.color = "white";
 title.fontSize = 21;
@@ -42,7 +46,7 @@ title.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 panel.addControl(title);
 
 const info = new TextBlock();
-info.height = "104px";
+info.height = "124px";
 info.color = "#e8edf7";
 info.fontSize = 15;
 info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -86,11 +90,13 @@ engine.runRenderLoop(() => {
 
   player.update(dt);
   vehicle.update(dt);
+  traffic.update(dt);
+  pedestrians.update(dt);
 
   const nearVehicle = !driving && vehicle.distanceTo(player.root.position) <= 3.2;
   info.text = driving
-    ? "W/S Accelerate & Reverse • A/D Steer\nE Exit Vehicle • Mouse Orbit / Zoom\nVehicle controller + camera handoff"
-    : `WASD Move • Shift Sprint • Space Jump\nE Enter Vehicle${nearVehicle ? "  ← VEHICLE IN RANGE" : ""}\nMouse Orbit / Zoom`;
+    ? "W/S Accelerate & Reverse • A/D Steer\nE Exit Vehicle • Mouse Orbit / Zoom\n9 AI traffic cars active • 18 pedestrians roaming"
+    : `WASD Move • Shift Sprint • Space Jump\nE Enter Vehicle${nearVehicle ? "  ← VEHICLE IN RANGE" : ""}\n9 AI traffic cars active • 18 pedestrians roaming`;
 
   scene.render();
 });
