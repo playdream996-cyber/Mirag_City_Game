@@ -16,12 +16,13 @@ const WALK_SPEED = 4.8;
 const RUN_SPEED = 11.0;
 const AIR_CONTROL = 5.0;
 const JUMP_SPEED = 8.5;
-const GRAVITY = new Vector3(0, -19.6, 0);
+const GRAVITY_ACCELERATION = -19.6;
+const TERMINAL_FALL_SPEED = -45.0;
+const ZERO_GRAVITY = Vector3.Zero();
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-// Havok character-controller position is the capsule center. In the runtime geometry
-// the feet are half the cylindrical height plus the spherical end-cap radius below it.
+// Runtime Havok capsule center-to-feet distance for this controller geometry.
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
@@ -44,7 +45,7 @@ export class PlayerController {
   private coyoteTimer = 0;
   private jumpBufferTimer = 0;
   private lastJumpTriggered = false;
-  private jumpAscending = false;
+  private verticalVelocity = 0;
   private lastSupportState: CharacterSupportedState = CharacterSupportedState.UNSUPPORTED;
   private groundProbeHit = false;
   private groundProbeDistance = Number.POSITIVE_INFINITY;
@@ -105,16 +106,19 @@ export class PlayerController {
   setEnabled(value: boolean): void {
     this.enabled = value;
     if (this.visualRoot) this.visualRoot.setEnabled(value);
-    if (!value) this.physicsController.setVelocity(Vector3.Zero());
+    if (!value) {
+      this.verticalVelocity = 0;
+      this.physicsController.setVelocity(Vector3.Zero());
+    }
   }
 
   teleport(position: Vector3): void {
     this.root.position.copyFrom(position);
     this.physicsController.setPosition(position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)));
     this.physicsController.setVelocity(Vector3.Zero());
+    this.verticalVelocity = 0;
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
-    this.jumpAscending = false;
   }
 
   isUsingFallbackVisual(): boolean {
@@ -149,6 +153,10 @@ export class PlayerController {
     return this.physicsController.getPosition().y - CAPSULE_FEET_OFFSET;
   }
 
+  getVerticalVelocity(): number {
+    return this.verticalVelocity;
+  }
+
   getAnimationState(): CharacterAnimationState {
     return this.lastAnimationState;
   }
@@ -180,6 +188,7 @@ export class PlayerController {
     this.lastJumpTriggered = false;
 
     this.syncRootFromPhysics();
+    this.updateGroundProbe();
 
     this.camera.target = Vector3.Lerp(
       this.camera.target,
@@ -187,31 +196,36 @@ export class PlayerController {
       Math.min(1, safeDt * 10),
     );
 
-    const up = Vector3.Up();
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
-    const currentVelocity = this.physicsController.getVelocity();
-    this.updateGroundProbe();
-
     const havokSupported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
     const hasGroundContact = havokSupported || this.groundProbeHit;
-    this.grounded = hasGroundContact && !this.jumpAscending && currentVelocity.y <= 0.1;
+    this.grounded = hasGroundContact && this.verticalVelocity <= 0.1;
 
-    if (this.grounded) this.coyoteTimer = COYOTE_TIME;
-    else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
+    if (this.grounded) {
+      this.coyoteTimer = COYOTE_TIME;
+      if (this.verticalVelocity < 0) this.verticalVelocity = 0;
+    } else {
+      this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
+    }
 
-    if (this.input.consumeJump()) this.jumpBufferTimer = JUMP_BUFFER_TIME;
-    else this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - safeDt);
+    if (this.input.consumeJump()) {
+      this.jumpBufferTimer = JUMP_BUFFER_TIME;
+    } else {
+      this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - safeDt);
+    }
 
     const cameraForward = this.camera.target.subtract(this.camera.position);
     cameraForward.y = 0;
     if (cameraForward.lengthSquared() > 0.0001) cameraForward.normalize();
     else cameraForward.copyFromFloats(0, 0, 1);
-    const cameraRight = Vector3.Cross(cameraForward, up).normalize();
 
+    const up = Vector3.Up();
+    const cameraRight = Vector3.Cross(cameraForward, up).normalize();
     const inputMove = Vector3.Zero();
     const state = this.input.state;
+
     if (state.forward) inputMove.addInPlace(cameraForward);
     if (state.back) inputMove.subtractInPlace(cameraForward);
     if (state.right) inputMove.addInPlace(cameraRight);
@@ -224,35 +238,43 @@ export class PlayerController {
     const desiredVelocity = hasMovement ? inputMove.scale(desiredSpeed) : Vector3.Zero();
     this.lastDesiredVelocity.copyFrom(desiredVelocity);
 
-    let outputVelocity: Vector3;
-    if (this.grounded) {
-      outputVelocity = new Vector3(desiredVelocity.x, 0, desiredVelocity.z);
-    } else {
-      outputVelocity = currentVelocity.clone();
-      outputVelocity.x = Scalar.Lerp(currentVelocity.x, desiredVelocity.x, Math.min(1, safeDt * AIR_CONTROL));
-      outputVelocity.z = Scalar.Lerp(currentVelocity.z, desiredVelocity.z, Math.min(1, safeDt * AIR_CONTROL));
-    }
-
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
       const launchPosition = this.physicsController.getPosition().add(
         new Vector3(0, JUMP_CONTACT_RELEASE, 0),
       );
       this.physicsController.setPosition(launchPosition);
-      outputVelocity.y = JUMP_SPEED;
-      this.physicsController.setVelocity(outputVelocity);
+      this.verticalVelocity = JUMP_SPEED;
       this.grounded = false;
-      this.jumpAscending = true;
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
       this.lastJumpTriggered = true;
-    } else {
-      this.physicsController.setVelocity(outputVelocity);
+    } else if (!this.grounded) {
+      this.verticalVelocity = Math.max(
+        TERMINAL_FALL_SPEED,
+        this.verticalVelocity + GRAVITY_ACCELERATION * safeDt,
+      );
     }
 
-    this.physicsController.integrate(safeDt, support, GRAVITY);
+    const currentVelocity = this.physicsController.getVelocity();
+    const horizontalVelocity = this.grounded
+      ? new Vector3(desiredVelocity.x, 0, desiredVelocity.z)
+      : new Vector3(
+          Scalar.Lerp(currentVelocity.x, desiredVelocity.x, Math.min(1, safeDt * AIR_CONTROL)),
+          0,
+          Scalar.Lerp(currentVelocity.z, desiredVelocity.z, Math.min(1, safeDt * AIR_CONTROL)),
+        );
 
-    const postVelocity = this.physicsController.getVelocity();
-    if (this.jumpAscending && postVelocity.y <= 0) this.jumpAscending = false;
+    const outputVelocity = new Vector3(
+      horizontalVelocity.x,
+      this.verticalVelocity,
+      horizontalVelocity.z,
+    );
+
+    this.physicsController.setVelocity(outputVelocity);
+
+    // Gravity is accumulated explicitly above so it cannot disappear between controller ticks.
+    // Pass zero gravity here to avoid applying acceleration twice.
+    this.physicsController.integrate(safeDt, support, ZERO_GRAVITY);
 
     if (hasMovement) {
       const targetRotation = Math.atan2(inputMove.x, inputMove.z);
@@ -263,7 +285,7 @@ export class PlayerController {
       );
     }
 
-    this.updateAnimation(hasMovement, state.sprint, postVelocity.y);
+    this.updateAnimation(hasMovement, state.sprint, this.verticalVelocity);
   }
 
   private syncRootFromPhysics(): void {
