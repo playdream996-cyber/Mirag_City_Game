@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-gravityfix-2026-09-02-06";
+const BUILD_ID = "phase2-landingfix-2026-09-02-07";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "690px";
+  panel.width = "720px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -55,7 +55,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "350px";
+  info.height = "375px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -80,7 +80,8 @@ async function bootstrap(): Promise<void> {
       `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
       `Havok support: ${supportLabel(player.getSupportState())}`,
       `Ground probe: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
-      `Y debug — center: ${player.getControllerCenterY().toFixed(3)} • feet: ${player.getComputedFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
+      `Y debug — center: ${player.getControllerCenterY().toFixed(3)} • physics feet: ${player.getComputedFeetY().toFixed(3)} • visual feet: ${player.getVisualFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
+      `Visual correction: ${player.getVisualFeetCorrectionY().toFixed(3)} m`,
       `Animation state: ${player.getAnimationState().toUpperCase()}`,
       `Visual: ${player.isUsingFallbackVisual() ? "fallback capsule (add public/assets/characters/player.glb)" : "player.glb"}`,
     ].join("\n");
