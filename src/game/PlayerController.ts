@@ -12,16 +12,17 @@ import { CharacterAnimationController, CharacterAnimationState } from "./Charact
 import { CharacterVisual } from "./CharacterVisual";
 
 const WALK_SPEED = 4.8;
-const RUN_SPEED = 8.2;
+const RUN_SPEED = 11.0;
 const AIR_CONTROL = 5.0;
-const JUMP_SPEED = 7.2;
+const JUMP_SPEED = 8.5;
 const GRAVITY = new Vector3(0, -19.6, 0);
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
-const COYOTE_TIME = 0.12;
-const JUMP_BUFFER_TIME = 0.14;
+const COYOTE_TIME = 0.16;
+const JUMP_BUFFER_TIME = 0.18;
+const JUMP_CONTACT_RELEASE = 0.08;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -38,6 +39,7 @@ export class PlayerController {
   private coyoteTimer = 0;
   private jumpBufferTimer = 0;
   private lastJumpTriggered = false;
+  private jumpAscending = false;
 
   constructor(
     private readonly scene: Scene,
@@ -103,6 +105,7 @@ export class PlayerController {
     this.physicsController.setVelocity(Vector3.Zero());
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
+    this.jumpAscending = false;
   }
 
   isUsingFallbackVisual(): boolean {
@@ -154,7 +157,12 @@ export class PlayerController {
 
     const up = Vector3.Up();
     const support = this.physicsController.checkSupport(safeDt, DOWN);
-    this.grounded = support.supportedState === CharacterSupportedState.SUPPORTED;
+    const supported = support.supportedState === CharacterSupportedState.SUPPORTED;
+
+    // Do not let the pre-jump support result instantly re-ground the controller
+    // while it still has upward velocity.
+    const currentVelocity = this.physicsController.getVelocity();
+    this.grounded = supported && !this.jumpAscending && currentVelocity.y <= 0.1;
 
     if (this.grounded) this.coyoteTimer = COYOTE_TIME;
     else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
@@ -182,9 +190,7 @@ export class PlayerController {
     const desiredVelocity = hasMovement ? inputMove.scale(desiredSpeed) : Vector3.Zero();
     this.lastDesiredVelocity.copyFrom(desiredVelocity);
 
-    const currentVelocity = this.physicsController.getVelocity();
     let outputVelocity: Vector3;
-
     if (this.grounded) {
       outputVelocity = new Vector3(desiredVelocity.x, 0, desiredVelocity.z);
     } else {
@@ -194,15 +200,28 @@ export class PlayerController {
     }
 
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
+      // Separate the capsule from the current supporting surface first. This avoids
+      // Havok resolving the launch impulse back into the same contact on this frame.
+      const launchPosition = this.physicsController.getPosition().add(
+        new Vector3(0, JUMP_CONTACT_RELEASE, 0),
+      );
+      this.physicsController.setPosition(launchPosition);
       outputVelocity.y = JUMP_SPEED;
+      this.physicsController.setVelocity(outputVelocity);
+
       this.grounded = false;
+      this.jumpAscending = true;
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
       this.lastJumpTriggered = true;
+    } else {
+      this.physicsController.setVelocity(outputVelocity);
     }
 
-    this.physicsController.setVelocity(outputVelocity);
     this.physicsController.integrate(safeDt, support, GRAVITY);
+
+    const postVelocity = this.physicsController.getVelocity();
+    if (this.jumpAscending && postVelocity.y <= 0) this.jumpAscending = false;
 
     if (hasMovement) {
       const targetRotation = Math.atan2(inputMove.x, inputMove.z);
@@ -213,7 +232,7 @@ export class PlayerController {
       );
     }
 
-    this.updateAnimation(hasMovement, state.sprint, outputVelocity.y);
+    this.updateAnimation(hasMovement, state.sprint, postVelocity.y);
   }
 
   private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
