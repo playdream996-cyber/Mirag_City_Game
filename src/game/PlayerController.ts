@@ -25,7 +25,6 @@ const CAPSULE_RADIUS = 0.42;
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
-const JUMP_CONTACT_RELEASE = 0.08;
 const GROUND_PROBE_START = 0.20;
 const GROUND_PROBE_LENGTH = 0.50;
 
@@ -220,12 +219,12 @@ export class PlayerController {
     if (cameraForward.lengthSquared() > 0.0001) cameraForward.normalize();
     else cameraForward.copyFromFloats(0, 0, 1);
 
-    const up = Vector3.Up();
-    // In Babylon's left-handed coordinate system, Up x Forward gives camera-right.
-    const cameraRight = Vector3.Cross(up, cameraForward).normalize();
+    // Explicit right vector for Babylon's left-handed world:
+    // right = (forward.z, 0, -forward.x)
+    const cameraRight = new Vector3(cameraForward.z, 0, -cameraForward.x).normalize();
+
     const inputMove = Vector3.Zero();
     const state = this.input.state;
-
     if (state.forward) inputMove.addInPlace(cameraForward);
     if (state.back) inputMove.subtractInPlace(cameraForward);
     if (state.right) inputMove.addInPlace(cameraRight);
@@ -239,10 +238,8 @@ export class PlayerController {
     this.lastDesiredVelocity.copyFrom(desiredVelocity);
 
     if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
-      const launchPosition = this.physicsController.getPosition().add(
-        new Vector3(0, JUMP_CONTACT_RELEASE, 0),
-      );
-      this.physicsController.setPosition(launchPosition);
+      // Jump is velocity-only. Do not move the controller upward manually;
+      // repeated positional nudges caused permanent height creep after each jump.
       this.verticalVelocity = JUMP_SPEED;
       this.grounded = false;
       this.coyoteTimer = 0;
