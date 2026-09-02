@@ -19,9 +19,9 @@ const GRAVITY = new Vector3(0, -19.6, 0);
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-// Havok's capsuleHeight is the straight section between the spherical end caps.
-// Center-to-feet therefore includes half that height plus the bottom cap radius.
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
+const COYOTE_TIME = 0.12;
+const JUMP_BUFFER_TIME = 0.14;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -35,12 +35,14 @@ export class PlayerController {
   private visualFallback = true;
   private lastAnimationState: CharacterAnimationState = "idle";
   private lastDesiredVelocity = Vector3.Zero();
+  private coyoteTimer = 0;
+  private jumpBufferTimer = 0;
+  private lastJumpTriggered = false;
 
   constructor(
     private readonly scene: Scene,
     private readonly input: InputController,
   ) {
-    // Gameplay root represents the player's feet position.
     this.root = new TransformNode("playerRoot", scene);
     this.root.position = new Vector3(8, 0, 8);
 
@@ -92,17 +94,15 @@ export class PlayerController {
   setEnabled(value: boolean): void {
     this.enabled = value;
     if (this.visualRoot) this.visualRoot.setEnabled(value);
-    if (!value) {
-      this.physicsController.setVelocity(Vector3.Zero());
-    }
+    if (!value) this.physicsController.setVelocity(Vector3.Zero());
   }
 
   teleport(position: Vector3): void {
     this.root.position.copyFrom(position);
-    this.physicsController.setPosition(
-      position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
-    );
+    this.physicsController.setPosition(position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)));
     this.physicsController.setVelocity(Vector3.Zero());
+    this.coyoteTimer = 0;
+    this.jumpBufferTimer = 0;
   }
 
   isUsingFallbackVisual(): boolean {
@@ -130,14 +130,21 @@ export class PlayerController {
     return state.forward || state.back || state.left || state.right;
   }
 
+  isSprintActive(): boolean {
+    return this.input.isSprintActive();
+  }
+
+  wasJumpTriggered(): boolean {
+    return this.lastJumpTriggered;
+  }
+
   update(dt: number): void {
     if (!this.enabled) return;
     const safeDt = Math.min(dt, 1 / 20);
+    this.lastJumpTriggered = false;
 
     const controllerPosition = this.physicsController.getPosition();
-    this.root.position.copyFrom(
-      controllerPosition.subtract(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
-    );
+    this.root.position.copyFrom(controllerPosition.subtract(new Vector3(0, CAPSULE_FEET_OFFSET, 0)));
 
     this.camera.target = Vector3.Lerp(
       this.camera.target,
@@ -146,9 +153,14 @@ export class PlayerController {
     );
 
     const up = Vector3.Up();
-    // checkSupport expects a direction vector, not gravity acceleration.
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.grounded = support.supportedState === CharacterSupportedState.SUPPORTED;
+
+    if (this.grounded) this.coyoteTimer = COYOTE_TIME;
+    else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
+
+    if (this.input.consumeJump()) this.jumpBufferTimer = JUMP_BUFFER_TIME;
+    else this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - safeDt);
 
     const cameraForward = this.camera.target.subtract(this.camera.position);
     cameraForward.y = 0;
@@ -174,27 +186,19 @@ export class PlayerController {
     let outputVelocity: Vector3;
 
     if (this.grounded) {
-      // Keep the first grounded implementation intentionally explicit and reliable:
-      // horizontal player intent directly controls X/Z while Havok still resolves contacts.
       outputVelocity = new Vector3(desiredVelocity.x, 0, desiredVelocity.z);
-
-      if (this.input.consumeJump()) {
-        outputVelocity.y = JUMP_SPEED;
-        this.grounded = false;
-      }
     } else {
       outputVelocity = currentVelocity.clone();
-      outputVelocity.x = Scalar.Lerp(
-        currentVelocity.x,
-        desiredVelocity.x,
-        Math.min(1, safeDt * AIR_CONTROL),
-      );
-      outputVelocity.z = Scalar.Lerp(
-        currentVelocity.z,
-        desiredVelocity.z,
-        Math.min(1, safeDt * AIR_CONTROL),
-      );
-      this.input.consumeJump();
+      outputVelocity.x = Scalar.Lerp(currentVelocity.x, desiredVelocity.x, Math.min(1, safeDt * AIR_CONTROL));
+      outputVelocity.z = Scalar.Lerp(currentVelocity.z, desiredVelocity.z, Math.min(1, safeDt * AIR_CONTROL));
+    }
+
+    if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
+      outputVelocity.y = JUMP_SPEED;
+      this.grounded = false;
+      this.coyoteTimer = 0;
+      this.jumpBufferTimer = 0;
+      this.lastJumpTriggered = true;
     }
 
     this.physicsController.setVelocity(outputVelocity);
@@ -214,13 +218,9 @@ export class PlayerController {
 
   private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
     let next: CharacterAnimationState;
-    if (!this.grounded) {
-      next = verticalVelocity > 0.4 ? "jump" : "fall";
-    } else if (!hasMovement) {
-      next = "idle";
-    } else {
-      next = sprint ? "run" : "walk";
-    }
+    if (!this.grounded) next = verticalVelocity > 0.4 ? "jump" : "fall";
+    else if (!hasMovement) next = "idle";
+    else next = sprint ? "run" : "walk";
 
     this.lastAnimationState = next;
     this.animator?.setState(next);
