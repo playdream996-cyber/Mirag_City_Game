@@ -27,6 +27,7 @@ const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
 const GROUND_PROBE_START = 0.20;
 const GROUND_PROBE_LENGTH = 0.50;
+const MAX_VISUAL_FEET_CORRECTION = 0.50;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -209,11 +210,16 @@ export class PlayerController {
       this.coyoteTimer = COYOTE_TIME;
       if (this.verticalVelocity < 0) this.verticalVelocity = 0;
 
-      // Keep Havok's internal capsule untouched, but reconcile the gameplay/visual feet
-      // to the actual detected surface. Persist this correction during the whole jump so
-      // takeoff and landing use the same visual baseline instead of accumulating height.
+      // Visual alignment may follow a nearby floor, but it can never affect the
+      // physics ground probe. Clamp the correction so a bad probe can never hide
+      // metres of physics drift again.
       if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
-        this.visualFeetCorrectionY = this.groundPointY - this.getComputedFeetY();
+        const rawCorrection = this.groundPointY - this.getComputedFeetY();
+        this.visualFeetCorrectionY = Scalar.Clamp(
+          rawCorrection,
+          -MAX_VISUAL_FEET_CORRECTION,
+          MAX_VISUAL_FEET_CORRECTION,
+        );
         this.syncRootFromPhysics();
       }
     } else {
@@ -237,7 +243,6 @@ export class PlayerController {
     if (cameraForward.lengthSquared() > 0.0001) cameraForward.normalize();
     else cameraForward.copyFromFloats(0, 0, 1);
 
-    // Explicit camera-right vector for Babylon's left-handed coordinates.
     const cameraRight = new Vector3(cameraForward.z, 0, -cameraForward.x).normalize();
 
     const inputMove = Vector3.Zero();
@@ -307,7 +312,16 @@ export class PlayerController {
   }
 
   private updateGroundProbe(): void {
-    const origin = this.root.position.add(new Vector3(0, GROUND_PROBE_START, 0));
+    // Critical: probe from the PHYSICS feet, not the visually-corrected root.
+    // Otherwise a visual correction can falsely report grounded while the real
+    // Havok controller is metres above the world.
+    const physicsFeetY = this.getComputedFeetY();
+    const controllerPosition = this.physicsController.getPosition();
+    const origin = new Vector3(
+      controllerPosition.x,
+      physicsFeetY + GROUND_PROBE_START,
+      controllerPosition.z,
+    );
     const ray = new Ray(origin, DOWN, GROUND_PROBE_LENGTH);
     const hit = this.scene.pickWithRay(
       ray,
