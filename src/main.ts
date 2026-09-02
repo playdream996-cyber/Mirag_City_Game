@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-capsulefix-2026-09-02-02";
+const BUILD_ID = "phase2-groundprobe-2026-09-02-03";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "590px";
+  panel.width = "620px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -55,7 +55,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "260px";
+  info.height = "285px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -67,6 +67,7 @@ async function bootstrap(): Promise<void> {
 
     const velocity = player.getVelocity();
     const desired = player.getDesiredVelocity();
+    const probeDistance = player.getGroundProbeDistance();
     info.text = [
       `Build: ${BUILD_ID}`,
       "WASD Move • Shift Sprint • Space Jump • Mouse Orbit",
@@ -75,7 +76,8 @@ async function bootstrap(): Promise<void> {
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
-      `Support: ${supportLabel(player.getSupportState())} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
+      `Havok support: ${supportLabel(player.getSupportState())}`,
+      `Ground probe: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
       `Animation state: ${player.getAnimationState().toUpperCase()}`,
       `Visual: ${player.isUsingFallbackVisual() ? "fallback capsule (add public/assets/characters/player.glb)" : "player.glb"}`,
     ].join("\n");
