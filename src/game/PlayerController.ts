@@ -27,7 +27,8 @@ const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
 const GROUND_PROBE_START = 0.20;
 const GROUND_PROBE_LENGTH = 0.50;
-const MAX_VISUAL_FEET_CORRECTION = 0.50;
+const MAX_GROUND_SNAP_DISTANCE = 0.30;
+const GROUND_PENETRATION_TOLERANCE = 0.03;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -196,32 +197,60 @@ export class PlayerController {
     const safeDt = Math.min(dt, 1 / 20);
     this.lastJumpTriggered = false;
 
+    this.visualFeetCorrectionY = 0;
     this.syncRootFromPhysics();
     this.updateGroundProbe();
 
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
+    // Reconcile the REAL physics feet to a nearby detected floor. The probe is based
+    // exclusively on the Havok position, so this cannot create the old visual feedback loop.
+    // We only snap while resting/descending and only over a small gap.
+    let floorGap = Number.POSITIVE_INFINITY;
+    if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
+      floorGap = this.getComputedFeetY() - this.groundPointY;
+      if (
+        this.verticalVelocity <= 0.1 &&
+        floorGap > GROUND_PENETRATION_TOLERANCE &&
+        floorGap <= MAX_GROUND_SNAP_DISTANCE
+      ) {
+        const controllerPosition = this.physicsController.getPosition();
+        this.physicsController.setPosition(
+          new Vector3(
+            controllerPosition.x,
+            controllerPosition.y - floorGap,
+            controllerPosition.z,
+          ),
+        );
+        this.verticalVelocity = 0;
+        this.physicsController.setVelocity(
+          new Vector3(
+            this.physicsController.getVelocity().x,
+            0,
+            this.physicsController.getVelocity().z,
+          ),
+        );
+        this.syncRootFromPhysics();
+        this.updateGroundProbe();
+        floorGap = this.groundProbeHit && Number.isFinite(this.groundPointY)
+          ? this.getComputedFeetY() - this.groundPointY
+          : Number.POSITIVE_INFINITY;
+      }
+    }
+
     const havokSupported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
-    const hasGroundContact = havokSupported || this.groundProbeHit;
+    const probeSupported =
+      this.groundProbeHit &&
+      Number.isFinite(floorGap) &&
+      floorGap >= -GROUND_PENETRATION_TOLERANCE &&
+      floorGap <= MAX_GROUND_SNAP_DISTANCE;
+    const hasGroundContact = havokSupported || probeSupported;
     this.grounded = hasGroundContact && this.verticalVelocity <= 0.1;
 
     if (this.grounded) {
       this.coyoteTimer = COYOTE_TIME;
       if (this.verticalVelocity < 0) this.verticalVelocity = 0;
-
-      // Visual alignment may follow a nearby floor, but it can never affect the
-      // physics ground probe. Clamp the correction so a bad probe can never hide
-      // metres of physics drift again.
-      if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
-        const rawCorrection = this.groundPointY - this.getComputedFeetY();
-        this.visualFeetCorrectionY = Scalar.Clamp(
-          rawCorrection,
-          -MAX_VISUAL_FEET_CORRECTION,
-          MAX_VISUAL_FEET_CORRECTION,
-        );
-        this.syncRootFromPhysics();
-      }
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
     }
@@ -306,15 +335,12 @@ export class PlayerController {
     const controllerPosition = this.physicsController.getPosition();
     this.root.position.copyFromFloats(
       controllerPosition.x,
-      controllerPosition.y - CAPSULE_FEET_OFFSET + this.visualFeetCorrectionY,
+      controllerPosition.y - CAPSULE_FEET_OFFSET,
       controllerPosition.z,
     );
   }
 
   private updateGroundProbe(): void {
-    // Critical: probe from the PHYSICS feet, not the visually-corrected root.
-    // Otherwise a visual correction can falsely report grounded while the real
-    // Havok controller is metres above the world.
     const physicsFeetY = this.getComputedFeetY();
     const controllerPosition = this.physicsController.getPosition();
     const origin = new Vector3(
