@@ -207,13 +207,17 @@ export class PlayerController {
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
+    // Keep the real physics feet on a nearby detected floor in both directions.
+    // Positive gap = hovering above the floor. Negative gap = penetrating below it.
+    // The previous version only corrected positive gaps, so Havok could remain SUPPORTED
+    // while the capsule was ~20 cm inside the ground after running across surfaces.
     let floorGap = Number.POSITIVE_INFINITY;
     if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
       floorGap = this.getComputedFeetY() - this.groundPointY;
       if (
         this.verticalVelocity <= 0.1 &&
-        floorGap > GROUND_PENETRATION_TOLERANCE &&
-        floorGap <= MAX_GROUND_SNAP_DISTANCE
+        Math.abs(floorGap) > GROUND_PENETRATION_TOLERANCE &&
+        Math.abs(floorGap) <= MAX_GROUND_SNAP_DISTANCE
       ) {
         const controllerPosition = this.physicsController.getPosition();
         this.physicsController.setPosition(
