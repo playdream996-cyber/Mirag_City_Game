@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-animspeed-2026-09-03-15";
+const BUILD_ID = "phase2-punchcombo-2026-09-03-16";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -76,7 +76,7 @@ async function bootstrap(): Promise<void> {
       `Sprint key: ${player.isSprintActive() ? "DOWN" : "UP"}`,
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Attack triggered this frame: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
-      `Combo punch: ${player.getComboStep()} • Hit window: ${player.isMeleeHitActive() ? "ACTIVE" : "CLOSED"}`,
+      `Combo punch: ${player.getComboStep()}/4 • Hit window: ${player.isMeleeHitActive() ? "ACTIVE" : "CLOSED"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
       `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
