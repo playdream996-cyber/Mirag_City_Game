@@ -23,15 +23,11 @@ export class CharacterVisual {
     visualRoot.parent = parent;
 
     try {
-      const result = await SceneLoader.ImportMeshAsync(
-        "",
-        "/assets/characters/",
-        "player.glb",
-        scene,
-      );
+      const assetRoot = `${import.meta.env.BASE_URL}assets/characters/`;
+      const result = await SceneLoader.ImportMeshAsync("", assetRoot, "player.glb", scene);
 
-      // Keep the GLB hierarchy intact so skeletons, skinning, sockets, and nested transforms
-      // remain valid. Only attach the imported top-level root to our gameplay visual root.
+      // Keep the imported hierarchy intact so skeletons, skinning, sockets, and nested
+      // transforms remain valid. Attach only the imported top-level root to gameplay.
       const importedRoot = result.meshes[0];
       if (importedRoot) importedRoot.parent = visualRoot;
       for (const mesh of result.meshes) mesh.isPickable = false;
@@ -47,7 +43,7 @@ export class CharacterVisual {
       };
     } catch (error) {
       console.warn(
-        "Player GLB not found at /assets/characters/player.glb. Using fallback capsule visual.",
+        "Player GLB not found at the configured app base path. Using fallback capsule visual.",
         error,
       );
 
