@@ -17,6 +17,12 @@ export type CharacterVisualResult = {
   usingFallback: boolean;
 };
 
+const PLAYER_TARGET_HEIGHT = 1.85;
+// The Quaternius animated rig sits slightly below its static mesh bounds once the
+// locomotion/idle clips are active. Keep physics feet authoritative and lift only
+// the rendered character so its shoes visually meet the gameplay floor.
+const PLAYER_VISUAL_FOOT_LIFT = 0.24;
+
 export class CharacterVisual {
   static async create(scene: Scene, parent: TransformNode): Promise<CharacterVisualResult> {
     const visualRoot = new TransformNode("playerVisualRoot", scene);
@@ -85,9 +91,8 @@ export class CharacterVisual {
     }
 
     const height = Math.max(0.001, max.y - min.y);
-    const targetHeight = 1.85;
-    const scale = targetHeight / height;
+    const scale = PLAYER_TARGET_HEIGHT / height;
     visualRoot.scaling.setAll(scale);
-    visualRoot.position.y = -min.y * scale;
+    visualRoot.position.y = -min.y * scale + PLAYER_VISUAL_FOOT_LIFT;
   }
 }
