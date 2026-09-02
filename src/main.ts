@@ -1,11 +1,22 @@
-import { Color4, Engine, Scene } from "@babylonjs/core";
+import { CharacterSupportedState, Color4, Engine, Scene } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
 import { InputController } from "./game/InputController";
 import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-groundfix-2026-09-02-01";
+const BUILD_ID = "phase2-capsulefix-2026-09-02-02";
+
+function supportLabel(state: CharacterSupportedState): string {
+  switch (state) {
+    case CharacterSupportedState.SUPPORTED:
+      return "SUPPORTED";
+    case CharacterSupportedState.SLIDING:
+      return "SLIDING";
+    default:
+      return "UNSUPPORTED";
+  }
+}
 
 async function bootstrap(): Promise<void> {
   const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -27,7 +38,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "580px";
+  panel.width = "590px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -44,7 +55,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "250px";
+  info.height = "260px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -64,7 +75,7 @@ async function bootstrap(): Promise<void> {
       `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
-      `Support: ${player.getSupportStateLabel()} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
+      `Support: ${supportLabel(player.getSupportState())} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
       `Animation state: ${player.getAnimationState().toUpperCase()}`,
       `Visual: ${player.isUsingFallbackVisual() ? "fallback capsule (add public/assets/characters/player.glb)" : "player.glb"}`,
     ].join("\n");
