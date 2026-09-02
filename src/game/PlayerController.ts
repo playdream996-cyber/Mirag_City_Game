@@ -29,6 +29,7 @@ const GROUND_PROBE_START = 0.20;
 const GROUND_PROBE_LENGTH = 0.50;
 const MAX_GROUND_SNAP_DISTANCE = 0.30;
 const GROUND_PENETRATION_TOLERANCE = 0.03;
+const INITIAL_SPAWN = new Vector3(8, 0.12, 8);
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -57,7 +58,9 @@ export class PlayerController {
     private readonly input: InputController,
   ) {
     this.root = new TransformNode("playerRoot", scene);
-    this.root.position = new Vector3(8, 0, 8);
+    // Spawn feet directly on the road surface. The old Y=0 spawn was inside the
+    // 0.12 m road collider and Havok could resolve the initial overlap downward.
+    this.root.position.copyFrom(INITIAL_SPAWN);
 
     this.physicsController = new PhysicsCharacterController(
       this.root.position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
@@ -204,9 +207,6 @@ export class PlayerController {
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
-    // Reconcile the REAL physics feet to a nearby detected floor. The probe is based
-    // exclusively on the Havok position, so this cannot create the old visual feedback loop.
-    // We only snap while resting/descending and only over a small gap.
     let floorGap = Number.POSITIVE_INFINITY;
     if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
       floorGap = this.getComputedFeetY() - this.groundPointY;
