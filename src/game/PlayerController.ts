@@ -18,7 +18,9 @@ const JUMP_SPEED = 7.2;
 const GRAVITY = new Vector3(0, -19.6, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-const CAPSULE_CENTER_HEIGHT = CAPSULE_HEIGHT * 0.5;
+// Havok's capsuleHeight is the straight section between the spherical end caps.
+// Center-to-feet therefore includes half that height plus the bottom cap radius.
+const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5 + CAPSULE_RADIUS;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -36,11 +38,12 @@ export class PlayerController {
     private readonly scene: Scene,
     private readonly input: InputController,
   ) {
+    // Gameplay root represents the player's feet position.
     this.root = new TransformNode("playerRoot", scene);
     this.root.position = new Vector3(8, 0, 8);
 
     this.physicsController = new PhysicsCharacterController(
-      this.root.position.add(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+      this.root.position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
       {
         capsuleHeight: CAPSULE_HEIGHT,
         capsuleRadius: CAPSULE_RADIUS,
@@ -95,7 +98,7 @@ export class PlayerController {
   teleport(position: Vector3): void {
     this.root.position.copyFrom(position);
     this.physicsController.setPosition(
-      position.add(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+      position.add(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
     );
     this.physicsController.setVelocity(Vector3.Zero());
   }
@@ -118,7 +121,7 @@ export class PlayerController {
 
     const controllerPosition = this.physicsController.getPosition();
     this.root.position.copyFrom(
-      controllerPosition.subtract(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+      controllerPosition.subtract(new Vector3(0, CAPSULE_FEET_OFFSET, 0)),
     );
 
     this.camera.target = Vector3.Lerp(
