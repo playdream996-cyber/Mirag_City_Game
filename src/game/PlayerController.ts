@@ -1,5 +1,6 @@
 import {
   ArcRotateCamera,
+  Mesh,
   MeshBuilder,
   Scalar,
   Scene,
@@ -13,6 +14,8 @@ import { InputController } from "./InputController";
 export class PlayerController {
   public readonly root: TransformNode;
   public readonly camera: ArcRotateCamera;
+  public readonly body: Mesh;
+  public enabled = true;
 
   private verticalVelocity = 0;
   private grounded = true;
@@ -27,10 +30,10 @@ export class PlayerController {
     const material = new StandardMaterial("playerMaterial", scene);
     material.diffuseColor = new Color3(0.15, 0.37, 0.88);
 
-    const body = MeshBuilder.CreateCapsule("player", { height: 2.2, radius: 0.55 }, scene);
-    body.parent = this.root;
-    body.material = material;
-    body.checkCollisions = true;
+    this.body = MeshBuilder.CreateCapsule("player", { height: 2.2, radius: 0.55 }, scene);
+    this.body.parent = this.root;
+    this.body.material = material;
+    this.body.checkCollisions = true;
 
     this.camera = new ArcRotateCamera(
       "camera",
@@ -51,7 +54,24 @@ export class PlayerController {
     this.camera.attachControl(canvas, true);
   }
 
+  detachCamera(canvas: HTMLCanvasElement) {
+    this.camera.detachControl(canvas);
+  }
+
+  setEnabled(value: boolean) {
+    this.enabled = value;
+    this.body.setEnabled(value);
+  }
+
+  teleport(position: Vector3) {
+    this.root.position.copyFrom(position);
+    this.verticalVelocity = 0;
+    this.grounded = true;
+  }
+
   update(dt: number) {
+    if (!this.enabled) return;
+
     this.camera.target = Vector3.Lerp(
       this.camera.target,
       this.root.position.add(new Vector3(0, 1.0, 0)),
@@ -89,12 +109,7 @@ export class PlayerController {
 
     this.verticalVelocity += -19.6 * dt;
     const displacement = new Vector3(horizontal.x, this.verticalVelocity * dt, horizontal.z);
-
-    // Phase 2 collision movement. This will be swapped to Babylon's Havok
-    // PhysicsCharacterController once the world colliders are migrated to Physics V2.
-    const body = this.scene.getMeshByName("player");
-    if (body) body.moveWithCollisions(displacement);
-    else this.root.position.addInPlace(displacement);
+    this.body.moveWithCollisions(displacement);
 
     if (this.root.position.y <= 1.1) {
       this.root.position.y = 1.1;
