@@ -5,7 +5,7 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-visualfeet-2026-09-02-12";
+const BUILD_ID = "phase2-penetrationfix-2026-09-02-13";
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
