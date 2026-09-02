@@ -31,8 +31,11 @@ export class InputController {
       if (key === "a") this.state.left = isDown;
       if (key === "d") this.state.right = isDown;
       if (key === "shift") this.state.sprint = isDown;
-      if (key === " " && isDown && !kbInfo.event.repeat) this.state.jumpPressed = true;
-      if (key === "e" && isDown && !kbInfo.event.repeat) this.state.interactPressed = true;
+
+      // Babylon's IKeyboardEvent typing does not expose KeyboardEvent.repeat,
+      // so edge-triggered actions are latched only when their previous state is clear.
+      if (key === " " && isDown && !this.state.jumpPressed) this.state.jumpPressed = true;
+      if (key === "e" && isDown && !this.state.interactPressed) this.state.interactPressed = true;
     });
   }
 
