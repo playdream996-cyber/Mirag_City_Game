@@ -23,7 +23,9 @@ export class CharacterVisual {
     visualRoot.parent = parent;
 
     try {
-      const assetRoot = `${import.meta.env.BASE_URL}assets/characters/`;
+      const assetRoot = window.location.hostname.endsWith("github.io")
+        ? "/Mirag_City_Game/assets/characters/"
+        : "/assets/characters/";
       const result = await SceneLoader.ImportMeshAsync("", assetRoot, "player.glb", scene);
 
       // Keep the imported hierarchy intact so skeletons, skinning, sockets, and nested
