@@ -2,6 +2,7 @@ import {
   ArcRotateCamera,
   CharacterSupportedState,
   PhysicsCharacterController,
+  Ray,
   Scalar,
   Scene,
   TransformNode,
@@ -19,12 +20,12 @@ const GRAVITY = new Vector3(0, -19.6, 0);
 const DOWN = new Vector3(0, -1, 0);
 const CAPSULE_HEIGHT = 1.8;
 const CAPSULE_RADIUS = 0.42;
-// Babylon PhysicsCharacterController uses capsuleHeight as the full capsule height,
-// matching MeshBuilder.CreateCapsule({ height }). The center-to-feet offset is half height.
 const CAPSULE_FEET_OFFSET = CAPSULE_HEIGHT * 0.5;
 const COYOTE_TIME = 0.16;
 const JUMP_BUFFER_TIME = 0.18;
 const JUMP_CONTACT_RELEASE = 0.08;
+const GROUND_PROBE_START = 0.24;
+const GROUND_PROBE_LENGTH = 0.46;
 
 export class PlayerController {
   public readonly root: TransformNode;
@@ -43,6 +44,8 @@ export class PlayerController {
   private lastJumpTriggered = false;
   private jumpAscending = false;
   private lastSupportState: CharacterSupportedState = CharacterSupportedState.UNSUPPORTED;
+  private groundProbeHit = false;
+  private groundProbeDistance = Number.POSITIVE_INFINITY;
 
   constructor(
     private readonly scene: Scene,
@@ -123,6 +126,14 @@ export class PlayerController {
     return this.lastSupportState;
   }
 
+  isGroundProbeHit(): boolean {
+    return this.groundProbeHit;
+  }
+
+  getGroundProbeDistance(): number {
+    return this.groundProbeDistance;
+  }
+
   getAnimationState(): CharacterAnimationState {
     return this.lastAnimationState;
   }
@@ -165,10 +176,15 @@ export class PlayerController {
     const up = Vector3.Up();
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
-    const supported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
 
     const currentVelocity = this.physicsController.getVelocity();
-    this.grounded = supported && !this.jumpAscending && currentVelocity.y <= 0.1;
+    this.updateGroundProbe();
+
+    // Havok support remains useful for slopes/platforms, but the gameplay ground probe
+    // is authoritative for jump eligibility when a static floor is visibly beneath us.
+    const havokSupported = support.supportedState !== CharacterSupportedState.UNSUPPORTED;
+    const hasGroundContact = havokSupported || this.groundProbeHit;
+    this.grounded = hasGroundContact && !this.jumpAscending && currentVelocity.y <= 0.1;
 
     if (this.grounded) this.coyoteTimer = COYOTE_TIME;
     else this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
@@ -237,6 +253,25 @@ export class PlayerController {
     }
 
     this.updateAnimation(hasMovement, state.sprint, postVelocity.y);
+  }
+
+  private updateGroundProbe(): void {
+    const origin = this.root.position.add(new Vector3(0, GROUND_PROBE_START, 0));
+    const ray = new Ray(origin, DOWN, GROUND_PROBE_LENGTH);
+    const hit = this.scene.pickWithRay(
+      ray,
+      (mesh) =>
+        mesh.isEnabled() &&
+        mesh.isVisible &&
+        (mesh.name === "ground" ||
+          mesh.name === "roadX" ||
+          mesh.name === "roadZ" ||
+          mesh.name === "building"),
+      false,
+    );
+
+    this.groundProbeHit = !!hit?.hit;
+    this.groundProbeDistance = hit?.hit ? hit.distance : Number.POSITIVE_INFINITY;
   }
 
   private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
