@@ -1,120 +1,220 @@
 import {
   ArcRotateCamera,
-  Mesh,
-  MeshBuilder,
+  CharacterSupportedState,
+  PhysicsCharacterController,
   Scalar,
   Scene,
-  StandardMaterial,
   TransformNode,
   Vector3,
-  Color3,
 } from "@babylonjs/core";
 import { InputController } from "./InputController";
+import { CharacterAnimationController, CharacterAnimationState } from "./CharacterAnimationController";
+import { CharacterVisual } from "./CharacterVisual";
+
+const WALK_SPEED = 4.8;
+const RUN_SPEED = 8.2;
+const AIR_CONTROL = 5.0;
+const JUMP_SPEED = 7.2;
+const GRAVITY = new Vector3(0, -19.6, 0);
+const CAPSULE_HEIGHT = 1.8;
+const CAPSULE_RADIUS = 0.42;
+const CAPSULE_CENTER_HEIGHT = CAPSULE_HEIGHT * 0.5;
 
 export class PlayerController {
   public readonly root: TransformNode;
   public readonly camera: ArcRotateCamera;
-  public readonly body: Mesh;
-  public enabled = true;
 
-  private verticalVelocity = 0;
-  private grounded = true;
+  private readonly physicsController: PhysicsCharacterController;
+  private animator: CharacterAnimationController | null = null;
+  private visualRoot: TransformNode | null = null;
+  private enabled = true;
+  private grounded = false;
+  private visualFallback = true;
+  private lastAnimationState: CharacterAnimationState = "idle";
 
   constructor(
     private readonly scene: Scene,
     private readonly input: InputController,
   ) {
     this.root = new TransformNode("playerRoot", scene);
-    this.root.position = new Vector3(8, 1.1, 8);
+    this.root.position = new Vector3(8, 0, 8);
 
-    const material = new StandardMaterial("playerMaterial", scene);
-    material.diffuseColor = new Color3(0.15, 0.37, 0.88);
-
-    this.body = MeshBuilder.CreateCapsule("player", { height: 2.2, radius: 0.55 }, scene);
-    this.body.parent = this.root;
-    this.body.material = material;
-    this.body.checkCollisions = true;
-
-    this.camera = new ArcRotateCamera(
-      "camera",
-      -Math.PI / 2,
-      1.1,
-      9,
-      this.root.position.clone(),
+    this.physicsController = new PhysicsCharacterController(
+      this.root.position.add(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+      {
+        capsuleHeight: CAPSULE_HEIGHT,
+        capsuleRadius: CAPSULE_RADIUS,
+      },
       scene,
     );
-    this.camera.lowerRadiusLimit = 5;
-    this.camera.upperRadiusLimit = 13;
+
+    this.physicsController.keepDistance = 0.03;
+    this.physicsController.keepContactTolerance = 0.08;
+    this.physicsController.maxSlopeCosine = Math.cos((50 * Math.PI) / 180);
+    this.physicsController.staticFriction = 0.15;
+    this.physicsController.dynamicFriction = 0.1;
+
+    this.camera = new ArcRotateCamera(
+      "playerCamera",
+      -Math.PI / 2,
+      1.08,
+      8.5,
+      this.root.position.add(new Vector3(0, 1.25, 0)),
+      scene,
+    );
+    this.camera.lowerRadiusLimit = 4.5;
+    this.camera.upperRadiusLimit = 12;
     this.camera.lowerBetaLimit = 0.55;
     this.camera.upperBetaLimit = 1.45;
     this.camera.wheelPrecision = 40;
   }
 
-  attachCamera(canvas: HTMLCanvasElement) {
+  async initializeVisual(): Promise<void> {
+    const visual = await CharacterVisual.create(this.scene, this.root);
+    this.visualRoot = visual.root;
+    this.animator = visual.animator;
+    this.visualFallback = visual.usingFallback;
+  }
+
+  attachCamera(canvas: HTMLCanvasElement): void {
     this.camera.attachControl(canvas, true);
   }
 
-  detachCamera(canvas: HTMLCanvasElement) {
+  detachCamera(canvas: HTMLCanvasElement): void {
     this.camera.detachControl(canvas);
   }
 
-  setEnabled(value: boolean) {
+  setEnabled(value: boolean): void {
     this.enabled = value;
-    this.body.setEnabled(value);
+    if (this.visualRoot) this.visualRoot.setEnabled(value);
+    if (!value) {
+      this.physicsController.setVelocity(Vector3.Zero());
+    }
   }
 
-  teleport(position: Vector3) {
+  teleport(position: Vector3): void {
     this.root.position.copyFrom(position);
-    this.verticalVelocity = 0;
-    this.grounded = true;
+    this.physicsController.setPosition(
+      position.add(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+    );
+    this.physicsController.setVelocity(Vector3.Zero());
   }
 
-  update(dt: number) {
+  isUsingFallbackVisual(): boolean {
+    return this.visualFallback;
+  }
+
+  isGrounded(): boolean {
+    return this.grounded;
+  }
+
+  getAnimationState(): CharacterAnimationState {
+    return this.lastAnimationState;
+  }
+
+  update(dt: number): void {
     if (!this.enabled) return;
+    const safeDt = Math.min(dt, 1 / 20);
+
+    const controllerPosition = this.physicsController.getPosition();
+    this.root.position.copyFrom(
+      controllerPosition.subtract(new Vector3(0, CAPSULE_CENTER_HEIGHT, 0)),
+    );
 
     this.camera.target = Vector3.Lerp(
       this.camera.target,
-      this.root.position.add(new Vector3(0, 1.0, 0)),
-      0.15,
+      this.root.position.add(new Vector3(0, 1.25, 0)),
+      Math.min(1, safeDt * 10),
     );
 
-    const forward = this.camera.target.subtract(this.camera.position);
-    forward.y = 0;
-    forward.normalize();
-    const right = Vector3.Cross(forward, Vector3.Up()).normalize();
+    const up = Vector3.Up();
+    const support = this.physicsController.checkSupport(safeDt, GRAVITY);
+    this.grounded = support.supportedState === CharacterSupportedState.SUPPORTED;
 
-    const move = Vector3.Zero();
+    const cameraForward = this.camera.target.subtract(this.camera.position);
+    cameraForward.y = 0;
+    if (cameraForward.lengthSquared() > 0.0001) cameraForward.normalize();
+    else cameraForward.copyFromFloats(0, 0, 1);
+    const cameraRight = Vector3.Cross(cameraForward, up).normalize();
+
+    const inputMove = Vector3.Zero();
     const state = this.input.state;
-    if (state.forward) move.addInPlace(forward);
-    if (state.back) move.subtractInPlace(forward);
-    if (state.right) move.addInPlace(right);
-    if (state.left) move.subtractInPlace(right);
+    if (state.forward) inputMove.addInPlace(cameraForward);
+    if (state.back) inputMove.subtractInPlace(cameraForward);
+    if (state.right) inputMove.addInPlace(cameraRight);
+    if (state.left) inputMove.subtractInPlace(cameraRight);
 
-    const horizontal = Vector3.Zero();
-    if (move.lengthSquared() > 0.001) {
-      move.normalize();
-      const speed = state.sprint ? 9 : 5;
-      horizontal.copyFrom(move.scale(speed * dt));
-      this.root.rotation.y = Scalar.Lerp(
+    const hasMovement = inputMove.lengthSquared() > 0.001;
+    if (hasMovement) inputMove.normalize();
+
+    const desiredSpeed = state.sprint ? RUN_SPEED : WALK_SPEED;
+    const desiredVelocity = hasMovement ? inputMove.scale(desiredSpeed) : Vector3.Zero();
+    const currentVelocity = this.physicsController.getVelocity();
+    let outputVelocity: Vector3;
+
+    if (this.grounded) {
+      outputVelocity = this.physicsController.calculateMovement(
+        safeDt,
+        cameraForward,
+        support.averageSurfaceNormal,
+        currentVelocity,
+        support.averageSurfaceVelocity,
+        desiredVelocity,
+        up,
+      );
+
+      if (this.input.consumeJump()) {
+        outputVelocity.y = JUMP_SPEED;
+        this.grounded = false;
+      }
+    } else {
+      // Preserve vertical momentum while giving the player deliberately weaker air control.
+      outputVelocity = currentVelocity.clone();
+      outputVelocity.x = Scalar.Lerp(
+        currentVelocity.x,
+        desiredVelocity.x,
+        Math.min(1, safeDt * AIR_CONTROL),
+      );
+      outputVelocity.z = Scalar.Lerp(
+        currentVelocity.z,
+        desiredVelocity.z,
+        Math.min(1, safeDt * AIR_CONTROL),
+      );
+      this.input.consumeJump();
+    }
+
+    this.physicsController.setVelocity(outputVelocity);
+    this.physicsController.integrate(safeDt, support, GRAVITY);
+
+    if (hasMovement) {
+      const targetRotation = Math.atan2(inputMove.x, inputMove.z);
+      this.root.rotation.y = this.lerpAngle(
         this.root.rotation.y,
-        Math.atan2(move.x, move.z),
-        Math.min(1, dt * 12),
+        targetRotation,
+        Math.min(1, safeDt * 12),
       );
     }
 
-    if (this.input.consumeJump() && this.grounded) {
-      this.verticalVelocity = 7.2;
-      this.grounded = false;
+    this.updateAnimation(hasMovement, state.sprint, outputVelocity.y);
+  }
+
+  private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
+    let next: CharacterAnimationState;
+    if (!this.grounded) {
+      next = verticalVelocity > 0.4 ? "jump" : "fall";
+    } else if (!hasMovement) {
+      next = "idle";
+    } else {
+      next = sprint ? "run" : "walk";
     }
 
-    this.verticalVelocity += -19.6 * dt;
-    const displacement = new Vector3(horizontal.x, this.verticalVelocity * dt, horizontal.z);
-    this.body.moveWithCollisions(displacement);
+    this.lastAnimationState = next;
+    this.animator?.setState(next);
+  }
 
-    if (this.root.position.y <= 1.1) {
-      this.root.position.y = 1.1;
-      this.verticalVelocity = 0;
-      this.grounded = true;
-    }
+  private lerpAngle(from: number, to: number, amount: number): number {
+    let delta = (to - from + Math.PI) % (Math.PI * 2) - Math.PI;
+    if (delta < -Math.PI) delta += Math.PI * 2;
+    return from + delta * amount;
   }
 }
