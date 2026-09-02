@@ -31,6 +31,13 @@ const MAX_GROUND_SNAP_DISTANCE = 0.30;
 const GROUND_PENETRATION_TOLERANCE = 0.03;
 const INITIAL_SPAWN = new Vector3(8, 0.12, 8);
 
+const LANDING_DURATION = 0.32;
+const ATTACK_DURATION = 0.44;
+const ATTACK_HIT_START = 0.11;
+const ATTACK_HIT_END = 0.28;
+const COMBO_RESET_TIME = 0.70;
+const ATTACK_MOVE_MULTIPLIER = 0.35;
+
 export class PlayerController {
   public readonly root: TransformNode;
   public readonly camera: ArcRotateCamera;
@@ -53,13 +60,18 @@ export class PlayerController {
   private groundPointY = Number.NaN;
   private visualFeetCorrectionY = 0;
 
+  private landingTimer = 0;
+  private attackTimer = 0;
+  private comboTimer = 0;
+  private comboStep: 0 | 1 = 0;
+  private meleeHitActive = false;
+  private lastAttackTriggered = false;
+
   constructor(
     private readonly scene: Scene,
     private readonly input: InputController,
   ) {
     this.root = new TransformNode("playerRoot", scene);
-    // Spawn feet directly on the road surface. The old Y=0 spawn was inside the
-    // 0.12 m road collider and Havok could resolve the initial overlap downward.
     this.root.position.copyFrom(INITIAL_SPAWN);
 
     this.physicsController = new PhysicsCharacterController(
@@ -124,6 +136,10 @@ export class PlayerController {
     this.visualFeetCorrectionY = 0;
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
+    this.landingTimer = 0;
+    this.attackTimer = 0;
+    this.comboTimer = 0;
+    this.meleeHitActive = false;
   }
 
   isUsingFallbackVisual(): boolean {
@@ -195,10 +211,35 @@ export class PlayerController {
     return this.lastJumpTriggered;
   }
 
+  wasAttackTriggered(): boolean {
+    return this.lastAttackTriggered;
+  }
+
+  isMeleeHitActive(): boolean {
+    return this.meleeHitActive;
+  }
+
+  getComboStep(): number {
+    return this.comboStep + 1;
+  }
+
   update(dt: number): void {
     if (!this.enabled) return;
     const safeDt = Math.min(dt, 1 / 20);
+    const wasGrounded = this.grounded;
     this.lastJumpTriggered = false;
+    this.lastAttackTriggered = false;
+
+    this.landingTimer = Math.max(0, this.landingTimer - safeDt);
+    this.attackTimer = Math.max(0, this.attackTimer - safeDt);
+    this.comboTimer = Math.max(0, this.comboTimer - safeDt);
+    if (this.comboTimer === 0 && this.attackTimer === 0) this.comboStep = 0;
+
+    const attackElapsed = ATTACK_DURATION - this.attackTimer;
+    this.meleeHitActive =
+      this.attackTimer > 0 &&
+      attackElapsed >= ATTACK_HIT_START &&
+      attackElapsed <= ATTACK_HIT_END;
 
     this.visualFeetCorrectionY = 0;
     this.syncRootFromPhysics();
@@ -207,10 +248,6 @@ export class PlayerController {
     const support = this.physicsController.checkSupport(safeDt, DOWN);
     this.lastSupportState = support.supportedState;
 
-    // Keep the real physics feet on a nearby detected floor in both directions.
-    // Positive gap = hovering above the floor. Negative gap = penetrating below it.
-    // The previous version only corrected positive gaps, so Havok could remain SUPPORTED
-    // while the capsule was ~20 cm inside the ground after running across surfaces.
     let floorGap = Number.POSITIVE_INFINITY;
     if (this.groundProbeHit && Number.isFinite(this.groundPointY)) {
       floorGap = this.getComputedFeetY() - this.groundPointY;
@@ -255,6 +292,7 @@ export class PlayerController {
     if (this.grounded) {
       this.coyoteTimer = COYOTE_TIME;
       if (this.verticalVelocity < 0) this.verticalVelocity = 0;
+      if (!wasGrounded) this.landingTimer = LANDING_DURATION;
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - safeDt);
     }
@@ -269,6 +307,14 @@ export class PlayerController {
       this.jumpBufferTimer = JUMP_BUFFER_TIME;
     } else {
       this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - safeDt);
+    }
+
+    if (this.input.consumeAttack() && this.grounded && this.attackTimer <= 0) {
+      this.comboStep = this.comboTimer > 0 ? (this.comboStep === 0 ? 1 : 0) : 0;
+      this.attackTimer = ATTACK_DURATION;
+      this.comboTimer = COMBO_RESET_TIME;
+      this.landingTimer = 0;
+      this.lastAttackTriggered = true;
     }
 
     const cameraForward = this.camera.target.subtract(this.camera.position);
@@ -288,7 +334,8 @@ export class PlayerController {
     const hasMovement = inputMove.lengthSquared() > 0.001;
     if (hasMovement) inputMove.normalize();
 
-    const desiredSpeed = state.sprint ? RUN_SPEED : WALK_SPEED;
+    const baseSpeed = state.sprint ? RUN_SPEED : WALK_SPEED;
+    const desiredSpeed = this.attackTimer > 0 ? baseSpeed * ATTACK_MOVE_MULTIPLIER : baseSpeed;
     const desiredVelocity = hasMovement ? inputMove.scale(desiredSpeed) : Vector3.Zero();
     this.lastDesiredVelocity.copyFrom(desiredVelocity);
 
@@ -297,6 +344,9 @@ export class PlayerController {
       this.grounded = false;
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
+      this.landingTimer = 0;
+      this.attackTimer = 0;
+      this.meleeHitActive = false;
       this.lastJumpTriggered = true;
     } else if (!this.grounded) {
       this.verticalVelocity = Math.max(
@@ -372,7 +422,9 @@ export class PlayerController {
 
   private updateAnimation(hasMovement: boolean, sprint: boolean, verticalVelocity: number): void {
     let next: CharacterAnimationState;
-    if (!this.grounded) next = verticalVelocity > 0.4 ? "jump" : "fall";
+    if (this.attackTimer > 0) next = this.comboStep === 0 ? "punch1" : "punch2";
+    else if (!this.grounded) next = verticalVelocity > 0.4 ? "jump" : "fall";
+    else if (this.landingTimer > 0) next = "land";
     else if (!hasMovement) next = "idle";
     else next = sprint ? "run" : "walk";
 
