@@ -8,10 +8,13 @@ export type CharacterAnimationState =
   | "fall"
   | "land"
   | "punch1"
-  | "punch2";
+  | "punch2"
+  | "punch3"
+  | "punch4";
 
-// Exact Quaternius Universal Animation Library names come first. Generic hints
-// remain as fallbacks so a future character/animation set can still work.
+// Exact Quaternius Universal Animation Library names come first. The pack only
+// contains two dedicated punch clips, so punch3/punch4 intentionally reuse them
+// to form a longer Jab -> Cross -> Jab -> Cross combo.
 const NAME_HINTS: Record<CharacterAnimationState, string[]> = {
   idle: ["idle_loop", "idle", "stand", "breathing"],
   walk: ["walk_loop", "walk", "walking"],
@@ -21,19 +24,23 @@ const NAME_HINTS: Record<CharacterAnimationState, string[]> = {
   land: ["jump_land", "land", "landing"],
   punch1: ["punch_jab", "jab", "punch"],
   punch2: ["punch_cross", "cross", "punch"],
+  punch3: ["punch_jab", "jab", "punch"],
+  punch4: ["punch_cross", "cross", "punch"],
 };
 
-// Quaternius clips are authored at a cinematic/neutral pace. These multipliers
-// make gameplay feel responsive while leaving physics/movement speeds unchanged.
+// User requested faster punching specifically. Locomotion/jump playback stays at
+// the original authored speed; combat is accelerated for a snappier feel.
 const PLAYBACK_SPEED: Record<CharacterAnimationState, number> = {
   idle: 1.0,
-  walk: 1.25,
-  run: 1.35,
-  jump: 1.25,
-  fall: 1.10,
-  land: 1.50,
-  punch1: 1.60,
-  punch2: 1.60,
+  walk: 1.0,
+  run: 1.0,
+  jump: 1.0,
+  fall: 1.0,
+  land: 1.0,
+  punch1: 2.0,
+  punch2: 2.0,
+  punch3: 2.15,
+  punch4: 2.2,
 };
 
 export class CharacterAnimationController {
@@ -56,8 +63,10 @@ export class CharacterAnimationController {
     this.activeState = state;
 
     const next = this.clips.get(state) ?? this.fallbackClipFor(state);
-    if (!next || next === this.activeClip) return;
+    if (!next) return;
 
+    // A later combo step can intentionally reuse the same AnimationGroup (jab or
+    // cross). Restart it whenever the logical state changes so punch3/punch4 play.
     if (this.activeClip) {
       this.activeClip.stop();
     }
@@ -77,7 +86,8 @@ export class CharacterAnimationController {
     if (state === "jump") return this.clips.get("fall") ?? this.clips.get("idle");
     if (state === "fall") return this.clips.get("jump") ?? this.clips.get("idle");
     if (state === "land") return this.clips.get("idle");
-    if (state === "punch1" || state === "punch2") return this.clips.get("idle");
+    if (state === "punch1" || state === "punch3") return this.clips.get("punch1") ?? this.clips.get("idle");
+    if (state === "punch2" || state === "punch4") return this.clips.get("punch2") ?? this.clips.get("idle");
     return this.clips.get("idle");
   }
 
