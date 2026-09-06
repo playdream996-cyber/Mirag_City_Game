@@ -1,8 +1,10 @@
 import { CharacterSupportedState, Color4, Engine, Scene, Vector3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
 import { CombatTarget } from "./game/CombatTarget";
+import { buildCityExpansion } from "./game/CityExpansion";
 import { InputController } from "./game/InputController";
 import { MissionManager } from "./game/MissionManager";
+import { NavigationSystem } from "./game/NavigationSystem";
 import { PedestrianManager } from "./game/PedestrianManager";
 import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
@@ -11,7 +13,7 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "open-world-gameplay-v1-camera-fix-2026-09-06";
+const BUILD_ID = "city-population-navigation-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
 const CAMERA_LOOK_AHEAD = 3.4;
@@ -39,6 +41,7 @@ async function bootstrap(): Promise<void> {
   const physics = new PhysicsManager();
   await physics.initialize(scene);
   const world = buildWorld(scene, physics);
+  buildCityExpansion(scene, physics);
 
   const input = new InputController(scene);
   const player = new PlayerController(scene, input);
@@ -48,10 +51,10 @@ async function bootstrap(): Promise<void> {
   const traffic = new TrafficManager(scene);
   const pedestrians = new PedestrianManager(scene);
   const missions = new MissionManager(scene);
+  const navigation = new NavigationSystem();
   const wanted = new WantedSystem();
   const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
 
-  // Better over-the-shoulder / forward-looking default camera.
   player.camera.alpha = -Math.PI / 2;
   player.camera.beta = 1.28;
   player.camera.radius = 10.5;
@@ -74,7 +77,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — OPEN WORLD GAMEPLAY V1";
+  title.text = "MIRAG CITY — OPEN WORLD GAMEPLAY";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -83,7 +86,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "620px";
+  info.height = "650px";
   info.color = "#eef3fb";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -95,11 +98,7 @@ async function bootstrap(): Promise<void> {
   let vehicleMessage = "Walk near the red car and press E to enter.";
 
   const updatePlayerCameraTarget = (): void => {
-    const forward = new Vector3(
-      Math.sin(player.root.rotation.y),
-      0,
-      Math.cos(player.root.rotation.y),
-    );
+    const forward = new Vector3(Math.sin(player.root.rotation.y), 0, Math.cos(player.root.rotation.y));
     const desiredTarget = player.root.position
       .add(forward.scale(CAMERA_LOOK_AHEAD))
       .add(new Vector3(0, CAMERA_TARGET_HEIGHT, 0));
@@ -120,9 +119,7 @@ async function bootstrap(): Promise<void> {
   const exitVehicle = (): void => {
     vehicle.setOccupied(false);
     vehicle.detachCamera(canvas);
-
-    const exitOffset = new Vector3(3.2, 0, 0);
-    const exitPosition = vehicle.root.position.add(exitOffset);
+    const exitPosition = vehicle.root.position.add(new Vector3(3.2, 0, 0));
     player.teleport(exitPosition);
     player.setEnabled(true);
     updatePlayerCameraTarget();
@@ -141,35 +138,25 @@ async function bootstrap(): Promise<void> {
     } else {
       player.update(dt);
       updatePlayerCameraTarget();
-      if (interactPressed && vehicle.distanceTo(player.root.position) <= VEHICLE_INTERACT_DISTANCE) {
-        enterVehicle();
-      }
+      if (interactPressed && vehicle.distanceTo(player.root.position) <= VEHICLE_INTERACT_DISTANCE) enterVehicle();
     }
 
-    traffic.update(dt);
-    pedestrians.update(dt);
+    const actorPosition = vehicle.isOccupied ? vehicle.root.position : player.root.position;
+    traffic.update(dt, actorPosition);
+    pedestrians.update(dt, actorPosition);
     combatTarget.update(dt);
     wanted.update(dt);
     hitFeedbackTimer = Math.max(0, hitFeedbackTimer - dt);
 
-    const actorPosition = vehicle.isOccupied ? vehicle.root.position : player.root.position;
     const carDistance = vehicle.distanceTo(player.root.position);
-    const missionInteract =
-      interactPressed &&
-      !vehicle.isOccupied &&
-      carDistance > VEHICLE_INTERACT_DISTANCE;
+    const missionInteract = interactPressed && !vehicle.isOccupied && carDistance > VEHICLE_INTERACT_DISTANCE;
     missions.update(actorPosition, missionInteract);
 
     const hitWindow = !vehicle.isOccupied && player.isMeleeHitActive();
     if (hitWindow && !previousHitWindow) {
       const comboIndex = Math.max(0, Math.min(3, player.getComboStep() - 1));
       const damage = COMBO_DAMAGE[comboIndex];
-      const facing = new Vector3(
-        Math.sin(player.root.rotation.y),
-        0,
-        Math.cos(player.root.rotation.y),
-      );
-
+      const facing = new Vector3(Math.sin(player.root.rotation.y), 0, Math.cos(player.root.rotation.y));
       if (combatTarget.tryReceiveMeleeHit(player.root.position, facing, damage)) {
         lastDamage = damage;
         hitFeedbackTimer = 0.35;
@@ -185,21 +172,22 @@ async function bootstrap(): Promise<void> {
     const targetDistance = combatTarget.getDistanceFrom(actorPosition);
     const district = world.getDistrictAt(actorPosition);
     const nearestLandmark = world.getNearestLandmark(actorPosition);
+    const actorYaw = vehicle.isOccupied ? vehicle.root.rotation.y : player.root.rotation.y;
+    const navTarget = missions.getNavigationTarget(actorPosition);
+    const navText = navigation.getDirectionText(actorPosition, actorYaw, navTarget, missions.getNavigationLabel(actorPosition));
 
-    if (!vehicle.isOccupied && carDistance <= VEHICLE_INTERACT_DISTANCE) {
-      vehicleMessage = "Press E to enter vehicle";
-    } else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") {
-      vehicleMessage = "Explore on foot or approach the red car.";
-    }
+    if (!vehicle.isOccupied && carDistance <= VEHICLE_INTERACT_DISTANCE) vehicleMessage = "Press E to enter vehicle";
+    else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") vehicleMessage = "Explore on foot or approach the red car.";
 
     info.text = [
       `Build: ${BUILD_ID}`,
       `District: ${district} • Nearest activity: ${nearestLandmark}`,
+      navText,
       wanted.getHudText(),
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      "World activities: Bank Heist • Police Pursuit • Gang Territory • Street Race • Port Smuggling • Mansion Job",
+      "City: ~1500×1500 expanded world • 54 traffic cars • 72 pedestrians • local population balancing",
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
@@ -226,7 +214,5 @@ async function bootstrap(): Promise<void> {
 bootstrap().catch((error) => {
   console.error("Mirag City bootstrap failed:", error);
   const root = document.getElementById("app");
-  if (root) {
-    root.innerHTML = `<pre style="padding:24px;color:#fff;background:#260d0d;white-space:pre-wrap">Failed to start Mirag City.\n${String(error)}</pre>`;
-  }
+  if (root) root.innerHTML = `<pre style="padding:24px;color:#fff;background:#260d0d;white-space:pre-wrap">Failed to start Mirag City.\n${String(error)}</pre>`;
 });
