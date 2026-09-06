@@ -11,9 +11,11 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "open-world-gameplay-v1-errorfix-2026-09-06";
+const BUILD_ID = "open-world-gameplay-v1-camera-fix-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
+const CAMERA_LOOK_AHEAD = 3.4;
+const CAMERA_TARGET_HEIGHT = 1.45;
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -49,6 +51,16 @@ async function bootstrap(): Promise<void> {
   const wanted = new WantedSystem();
   const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
 
+  // Better over-the-shoulder / forward-looking default camera.
+  player.camera.alpha = -Math.PI / 2;
+  player.camera.beta = 1.28;
+  player.camera.radius = 10.5;
+  player.camera.lowerBetaLimit = 0.95;
+  player.camera.upperBetaLimit = 1.48;
+  player.camera.lowerRadiusLimit = 7.5;
+  player.camera.upperRadiusLimit = 14;
+  player.camera.panningSensibility = 0;
+
   player.attachCamera(canvas);
   scene.activeCamera = player.camera;
 
@@ -82,6 +94,20 @@ async function bootstrap(): Promise<void> {
   let lastDamage = 0;
   let vehicleMessage = "Walk near the red car and press E to enter.";
 
+  const updatePlayerCameraTarget = (): void => {
+    const forward = new Vector3(
+      Math.sin(player.root.rotation.y),
+      0,
+      Math.cos(player.root.rotation.y),
+    );
+    const desiredTarget = player.root.position
+      .add(forward.scale(CAMERA_LOOK_AHEAD))
+      .add(new Vector3(0, CAMERA_TARGET_HEIGHT, 0));
+    player.camera.target = Vector3.Lerp(player.camera.target, desiredTarget, 0.18);
+  };
+
+  updatePlayerCameraTarget();
+
   const enterVehicle = (): void => {
     vehicle.setOccupied(true);
     player.setEnabled(false);
@@ -99,6 +125,7 @@ async function bootstrap(): Promise<void> {
     const exitPosition = vehicle.root.position.add(exitOffset);
     player.teleport(exitPosition);
     player.setEnabled(true);
+    updatePlayerCameraTarget();
     player.attachCamera(canvas);
     scene.activeCamera = player.camera;
     vehicleMessage = "Exited vehicle.";
@@ -113,6 +140,7 @@ async function bootstrap(): Promise<void> {
       if (interactPressed) exitVehicle();
     } else {
       player.update(dt);
+      updatePlayerCameraTarget();
       if (interactPressed && vehicle.distanceTo(player.root.position) <= VEHICLE_INTERACT_DISTANCE) {
         enterVehicle();
       }
