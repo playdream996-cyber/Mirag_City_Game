@@ -16,7 +16,10 @@ for obj in list(scene.objects):
     if obj.name.startswith("PREVIEW_"):
         bpy.data.objects.remove(obj, do_unlink=True)
 
-scene.render.engine = 'BLENDER_EEVEE_NEXT'
+# Ubuntu 24.04 currently ships Blender 4.0, whose Eevee id is BLENDER_EEVEE.
+# Newer Blender builds renamed it to BLENDER_EEVEE_NEXT, so choose whichever exists.
+engine_items = {item.identifier for item in scene.bl_rna.properties['render'].fixed_type.properties['engine'].enum_items}
+scene.render.engine = 'BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in engine_items else 'BLENDER_EEVEE'
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
