@@ -31,27 +31,28 @@ export function buildCityExpansion(scene: Scene, physics: PhysicsManager): void 
   ground.receiveShadows = true;
   physics.addStaticBox(ground);
 
-  const roadPositions = [-600, -480, -360, 360, 480, 600];
+  const roadPositions = [-660, -540, -420, 420, 540, 660];
   for (const z of roadPositions) {
-    const road = MeshBuilder.CreateBox(`outer-road-x-${z}`, { width: 1450, height: 0.1, depth: 18 }, scene);
+    const road = MeshBuilder.CreateBox(`outer-road-x-${z}`, { width: 1450, height: 0.1, depth: 20 }, scene);
     road.position = new Vector3(0, 0.055, z);
     road.material = roadMat;
   }
   for (const x of roadPositions) {
-    const road = MeshBuilder.CreateBox(`outer-road-z-${x}`, { width: 18, height: 0.1, depth: 1450 }, scene);
+    const road = MeshBuilder.CreateBox(`outer-road-z-${x}`, { width: 20, height: 0.1, depth: 1450 }, scene);
     road.position = new Vector3(x, 0.055, 0);
     road.material = roadMat;
   }
 
-  const centers = [-660, -540, -420, 420, 540, 660];
   let index = 0;
-  for (const x of centers) {
-    for (const z of centers) {
-      if (Math.abs(x) < 400 && Math.abs(z) < 400) continue;
-      const height = 18 + ((index * 17) % 62);
+  for (let x = -690; x <= 690; x += 90) {
+    for (let z = -690; z <= 690; z += 90) {
+      if (Math.abs(x) < 390 && Math.abs(z) < 390) continue;
+      const height = 18 + ((index * 17) % 68);
+      const width = 42 + ((index * 11) % 22);
+      const depth = 42 + ((index * 7) % 22);
       const building = MeshBuilder.CreateBox(
         `outer-building-${index}`,
-        { width: 54, height, depth: 54 },
+        { width, height, depth },
         scene,
       );
       building.position = new Vector3(x, height / 2, z);
