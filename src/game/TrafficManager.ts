@@ -12,12 +12,18 @@ export class TrafficManager {
 
   constructor(private readonly scene: Scene) {
     const routes = [
-      this.horizontalLoop(-140),
-      this.horizontalLoop(0),
-      this.horizontalLoop(140),
-      this.verticalLoop(-140),
-      this.verticalLoop(70),
-      this.ringRoute(),
+      this.horizontalLoop(-225),
+      this.horizontalLoop(-75),
+      this.horizontalLoop(75),
+      this.horizontalLoop(225),
+      this.verticalLoop(-225),
+      this.verticalLoop(-75),
+      this.verticalLoop(75),
+      this.verticalLoop(225),
+      this.innerRingRoute(),
+      this.outerRingRoute(),
+      this.boulevardRoute(),
+      this.portRoute(),
     ];
 
     const colors = [
@@ -29,12 +35,14 @@ export class TrafficManager {
       new Color3(0.92, 0.92, 0.92),
       new Color3(0.12, 0.14, 0.18),
       new Color3(0.72, 0.34, 0.12),
+      new Color3(0.18, 0.65, 0.68),
+      new Color3(0.52, 0.52, 0.56),
     ];
 
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 36; i++) {
       const route = routes[i % routes.length];
-      const startIndex = i % route.length;
-      this.cars.push(this.createCar(route, startIndex, colors[i % colors.length], 7 + (i % 5) * 0.75));
+      const startIndex = (i * 2) % route.length;
+      this.cars.push(this.createCar(route, startIndex, colors[i % colors.length], 8 + (i % 6) * 0.9));
     }
   }
 
@@ -44,7 +52,7 @@ export class TrafficManager {
       const toTarget = target.subtract(car.root.position);
       toTarget.y = 0;
 
-      if (toTarget.lengthSquared() < 5) {
+      if (toTarget.lengthSquared() < 8) {
         car.targetIndex = (car.targetIndex + 1) % car.route.length;
         continue;
       }
@@ -62,7 +70,7 @@ export class TrafficManager {
 
     const bodyMat = new StandardMaterial(`trafficMat-${index}`, this.scene);
     bodyMat.diffuseColor = color;
-    bodyMat.specularColor = new Color3(0.12, 0.12, 0.12);
+    bodyMat.specularColor = new Color3(0.15, 0.15, 0.15);
 
     const body = MeshBuilder.CreateBox(`trafficBody-${index}`, { width: 1.9, height: 0.72, depth: 4.15 }, this.scene);
     body.parent = root;
@@ -70,45 +78,88 @@ export class TrafficManager {
     body.material = bodyMat;
 
     const cabinMat = new StandardMaterial(`trafficCabinMat-${index}`, this.scene);
-    cabinMat.diffuseColor = new Color3(0.11, 0.16, 0.22);
+    cabinMat.diffuseColor = new Color3(0.08, 0.13, 0.19);
+    cabinMat.specularColor = new Color3(0.24, 0.24, 0.24);
     const cabin = MeshBuilder.CreateBox(`trafficCabin-${index}`, { width: 1.55, height: 0.55, depth: 1.9 }, this.scene);
     cabin.parent = root;
     cabin.position = new Vector3(0, 1.25, -0.1);
     cabin.material = cabinMat;
 
+    const rearLightMat = new StandardMaterial(`trafficRear-${index}`, this.scene);
+    rearLightMat.diffuseColor = new Color3(0.5, 0.02, 0.02);
+    rearLightMat.emissiveColor = new Color3(0.25, 0, 0);
+    for (const x of [-0.62, 0.62]) {
+      const light = MeshBuilder.CreateBox(`trafficRear-${index}-${x}`, { width: 0.38, height: 0.18, depth: 0.08 }, this.scene);
+      light.parent = root;
+      light.position = new Vector3(x, 0.78, -2.1);
+      light.material = rearLightMat;
+    }
+
     return { root, route, targetIndex: (startIndex + 1) % route.length, speed };
   }
 
   private horizontalLoop(z: number): Vector3[] {
-    const lane = 3.3;
+    const lane = 3.8;
     return [
-      new Vector3(-252, 0.35, z + lane),
-      new Vector3(252, 0.35, z + lane),
-      new Vector3(252, 0.35, z - lane),
-      new Vector3(-252, 0.35, z - lane),
+      new Vector3(-330, 0.35, z + lane),
+      new Vector3(330, 0.35, z + lane),
+      new Vector3(330, 0.35, z - lane),
+      new Vector3(-330, 0.35, z - lane),
     ];
   }
 
   private verticalLoop(x: number): Vector3[] {
-    const lane = 3.3;
+    const lane = 3.8;
     return [
-      new Vector3(x + lane, 0.35, -252),
-      new Vector3(x + lane, 0.35, 252),
-      new Vector3(x - lane, 0.35, 252),
-      new Vector3(x - lane, 0.35, -252),
+      new Vector3(x + lane, 0.35, -330),
+      new Vector3(x + lane, 0.35, 330),
+      new Vector3(x - lane, 0.35, 330),
+      new Vector3(x - lane, 0.35, -330),
     ];
   }
 
-  private ringRoute(): Vector3[] {
+  private innerRingRoute(): Vector3[] {
     return [
-      new Vector3(-210, 0.35, -206.5),
-      new Vector3(210, 0.35, -206.5),
-      new Vector3(213.5, 0.35, -210),
-      new Vector3(213.5, 0.35, 210),
-      new Vector3(210, 0.35, 213.5),
-      new Vector3(-210, 0.35, 213.5),
-      new Vector3(-213.5, 0.35, 210),
-      new Vector3(-213.5, 0.35, -210),
+      new Vector3(-225, 0.35, -221),
+      new Vector3(225, 0.35, -221),
+      new Vector3(229, 0.35, -225),
+      new Vector3(229, 0.35, 225),
+      new Vector3(225, 0.35, 229),
+      new Vector3(-225, 0.35, 229),
+      new Vector3(-229, 0.35, 225),
+      new Vector3(-229, 0.35, -225),
+    ];
+  }
+
+  private outerRingRoute(): Vector3[] {
+    return [
+      new Vector3(-330, 0.35, -336),
+      new Vector3(330, 0.35, -336),
+      new Vector3(336, 0.35, -330),
+      new Vector3(336, 0.35, 330),
+      new Vector3(330, 0.35, 336),
+      new Vector3(-330, 0.35, 336),
+      new Vector3(-336, 0.35, 330),
+      new Vector3(-336, 0.35, -330),
+    ];
+  }
+
+  private boulevardRoute(): Vector3[] {
+    return [
+      new Vector3(-330, 0.35, 43),
+      new Vector3(330, 0.35, 43),
+      new Vector3(330, 0.35, 33),
+      new Vector3(-330, 0.35, 33),
+    ];
+  }
+
+  private portRoute(): Vector3[] {
+    return [
+      new Vector3(150, 0.35, 79),
+      new Vector3(300, 0.35, 79),
+      new Vector3(304, 0.35, 300),
+      new Vector3(225, 0.35, 304),
+      new Vector3(146, 0.35, 225),
     ];
   }
 }
