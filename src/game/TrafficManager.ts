@@ -15,6 +15,8 @@ export class TrafficManager {
     const routes = [
       this.horizontalLoop(-225), this.horizontalLoop(-75), this.horizontalLoop(75), this.horizontalLoop(225),
       this.verticalLoop(-225), this.verticalLoop(-75), this.verticalLoop(75), this.verticalLoop(225),
+      this.outerHorizontalLoop(-660), this.outerHorizontalLoop(-540), this.outerHorizontalLoop(540), this.outerHorizontalLoop(660),
+      this.outerVerticalLoop(-660), this.outerVerticalLoop(-540), this.outerVerticalLoop(540), this.outerVerticalLoop(660),
       this.innerRingRoute(), this.outerRingRoute(), this.boulevardRoute(), this.portRoute(),
     ];
     const colors = [
@@ -95,6 +97,8 @@ export class TrafficManager {
 
   private horizontalLoop(z:number):Vector3[]{ const l=3.8; return [new Vector3(-330,.35,z+l),new Vector3(330,.35,z+l),new Vector3(330,.35,z-l),new Vector3(-330,.35,z-l)]; }
   private verticalLoop(x:number):Vector3[]{ const l=3.8; return [new Vector3(x+l,.35,-330),new Vector3(x+l,.35,330),new Vector3(x-l,.35,330),new Vector3(x-l,.35,-330)]; }
+  private outerHorizontalLoop(z:number):Vector3[]{ const l=3.8; return [new Vector3(-700,.35,z+l),new Vector3(700,.35,z+l),new Vector3(700,.35,z-l),new Vector3(-700,.35,z-l)]; }
+  private outerVerticalLoop(x:number):Vector3[]{ const l=3.8; return [new Vector3(x+l,.35,-700),new Vector3(x+l,.35,700),new Vector3(x-l,.35,700),new Vector3(x-l,.35,-700)]; }
   private innerRingRoute():Vector3[]{ return [new Vector3(-225,.35,-221),new Vector3(225,.35,-221),new Vector3(229,.35,-225),new Vector3(229,.35,225),new Vector3(225,.35,229),new Vector3(-225,.35,229),new Vector3(-229,.35,225),new Vector3(-229,.35,-225)]; }
   private outerRingRoute():Vector3[]{ return [new Vector3(-330,.35,-336),new Vector3(330,.35,-336),new Vector3(336,.35,-330),new Vector3(336,.35,330),new Vector3(330,.35,336),new Vector3(-330,.35,336),new Vector3(-336,.35,330),new Vector3(-336,.35,-330)]; }
   private boulevardRoute():Vector3[]{ return [new Vector3(-330,.35,43),new Vector3(330,.35,43),new Vector3(330,.35,33),new Vector3(-330,.35,33)]; }
