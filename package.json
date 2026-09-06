@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "blender:city": "blender --background --python blender/build_city.py"
   },
   "dependencies": {
     "@babylonjs/core": "^8.26.1",
