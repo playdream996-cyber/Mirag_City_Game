@@ -28,12 +28,13 @@ export type TokyoBangkokWorldContext = {
   getNearestLandmark(position: Vector3): string;
 };
 
+type Landmark = { name: string; position: Vector3 };
+
 const CITY_SIZE = 1500;
-const HALF = CITY_SIZE / 2;
 const ROAD_Y = 0.07;
 const WATER_Y = 0.03;
 
-const landmarkPositions = [
+const landmarkPositions: Landmark[] = [
   { name: "Hill Mansion", position: new Vector3(-60, 0, 520) },
   { name: "Market Plaza", position: new Vector3(-360, 0, 230) },
   { name: "Central Bank", position: new Vector3(-55, 0, 170) },
@@ -44,7 +45,7 @@ const landmarkPositions = [
   { name: "Riverside Promenade", position: new Vector3(0, 0, -245) },
   { name: "Port Warehouse", position: new Vector3(360, 0, -260) },
   { name: "Grand Hotel", position: new Vector3(-20, 0, -500) },
-] as const;
+];
 
 function districtAt(position: Vector3): TokyoBangkokDistrict {
   const { x, z } = position;
@@ -179,27 +180,22 @@ export function buildTokyoBangkokMap(scene: Scene, physics: PhysicsManager): Tok
   const ground = createBox(scene, physics, "tokyo-bangkok-ground", new Vector3(0, -0.2, 0), new Vector3(CITY_SIZE, 0.4, CITY_SIZE), groundMat, true);
   ground.receiveShadows = true;
 
-  // South sea and marina coastline.
   createBox(scene, physics, "south-sea", new Vector3(0, WATER_Y, -650), new Vector3(CITY_SIZE, 0.08, 220), waterMat);
   createBox(scene, physics, "beachfront-strip", new Vector3(-90, 0.05, -520), new Vector3(850, 0.12, 95), sandMat);
   createBox(scene, physics, "marina-basin", new Vector3(315, WATER_Y, -515), new Vector3(310, 0.08, 125), waterMat);
 
-  // Bangkok-inspired river spine: broad in the south, narrowing toward the city core.
   createBox(scene, physics, "river-south", new Vector3(0, WATER_Y, -260), new Vector3(92, 0.08, 330), waterMat);
   createBox(scene, physics, "river-north", new Vector3(-20, WATER_Y, -30), new Vector3(60, 0.08, 150), waterMat);
 
-  // Canal Town: three parallel canals feeding the river.
   for (const z of [-225, -165, -105]) {
     createBox(scene, physics, `canal-west-${z}`, new Vector3(-300, WATER_Y, z), new Vector3(360, 0.08, 22), waterMat);
   }
 
-  // Main Tokyo-style transport spine.
-  addRoadX(scene, physics, roadMat, laneMat, 165, 0, 1180, 34); // central east-west boulevard
-  addRoadZ(scene, physics, roadMat, laneMat, 0, 170, 780, 34); // downtown north-south avenue
-  addRoadZ(scene, physics, roadMat, laneMat, -185, 150, 760, 24); // old market connector
-  addRoadZ(scene, physics, roadMat, laneMat, 190, 140, 800, 24); // tech connector
+  addRoadX(scene, physics, roadMat, laneMat, 165, 0, 1180, 34);
+  addRoadZ(scene, physics, roadMat, laneMat, 0, 170, 780, 34);
+  addRoadZ(scene, physics, roadMat, laneMat, -185, 150, 760, 24);
+  addRoadZ(scene, physics, roadMat, laneMat, 190, 140, 800, 24);
 
-  // Secondary district streets. These intentionally stop at water instead of crossing it everywhere.
   for (const z of [315, 245, 95, 35]) {
     addRoadX(scene, physics, roadMat, laneMat, z, 0, 1100, 22);
   }
@@ -208,21 +204,17 @@ export function buildTokyoBangkokMap(scene: Scene, physics: PhysicsManager): Tok
     addRoadX(scene, physics, roadMat, laneMat, z, -300, 500, 22);
   }
 
-  // Coastal road.
   addRoadX(scene, physics, roadMat, laneMat, -455, -70, 980, 28);
 
-  // Outer expressway partial loop.
   addRoadX(scene, physics, expressMat, laneMat, 395, 0, 1200, 28);
   addRoadZ(scene, physics, expressMat, laneMat, -520, 35, 720, 28);
   addRoadZ(scene, physics, expressMat, laneMat, 520, 20, 750, 28);
 
-  // Elevated downtown-to-tech expressway.
   createBox(scene, physics, "elevated-east-west", new Vector3(150, 8.0, 285), new Vector3(680, 0.8, 16), expressMat, true);
   for (let x = -140; x <= 440; x += 72) {
     createBox(scene, physics, `elevated-pillar-${x}`, new Vector3(x, 3.8, 285), new Vector3(2.6, 7.6, 2.6), concreteMat);
   }
 
-  // Bridges are deliberate choke points for driving and missions.
   for (const z of [-225, -165, -105]) {
     addBridge(scene, physics, `canal-bridge-a-${z}`, new Vector3(-365, 0.68, z), new Vector3(24, 1.0, 36), roadMat, concreteMat);
     addBridge(scene, physics, `canal-bridge-b-${z}`, new Vector3(-235, 0.68, z), new Vector3(24, 1.0, 36), roadMat, concreteMat);
@@ -231,7 +223,6 @@ export function buildTokyoBangkokMap(scene: Scene, physics: PhysicsManager): Tok
   addBridge(scene, physics, "river-bridge-riverside", new Vector3(0, 0.74, -195), new Vector3(132, 1.1, 28), roadMat, concreteMat);
   addBridge(scene, physics, "river-bridge-coastal", new Vector3(0, 0.74, -455), new Vector3(136, 1.1, 30), roadMat, concreteMat);
 
-  // VIP hills: stepped terrain only; buildings come in the environment phase.
   for (let i = 0; i < 5; i++) {
     createBox(
       scene,
@@ -244,7 +235,6 @@ export function buildTokyoBangkokMap(scene: Scene, physics: PhysicsManager): Tok
     );
   }
 
-  // Reserved landmark plots. These are intentionally flat and neutral until real buildings are placed.
   createLandmarkPad(scene, physics, "hill-mansion", landmarkPositions[0].position, new Vector3(90, 0, 70), plazaMat);
   createLandmarkPad(scene, physics, "market-plaza", landmarkPositions[1].position, new Vector3(95, 0, 75), plazaMat);
   createLandmarkPad(scene, physics, "central-bank", landmarkPositions[2].position, new Vector3(70, 0, 60), plazaMat);
@@ -255,13 +245,12 @@ export function buildTokyoBangkokMap(scene: Scene, physics: PhysicsManager): Tok
   createLandmarkPad(scene, physics, "port-warehouse", landmarkPositions[8].position, new Vector3(120, 0, 90), plazaMat);
   createLandmarkPad(scene, physics, "grand-hotel", landmarkPositions[9].position, new Vector3(110, 0, 80), plazaMat);
 
-  // Marina piers are part of the map itself, not decorative props.
   for (const x of [245, 295, 345, 395]) {
     createBox(scene, physics, `marina-pier-${x}`, new Vector3(x, 0.35, -540), new Vector3(8, 0.6, 95), concreteMat, true);
   }
 
   const getNearestLandmark = (position: Vector3): string => {
-    let best = landmarkPositions[0];
+    let best: Landmark = landmarkPositions[0];
     let bestDistance = Vector3.DistanceSquared(position, best.position);
     for (const landmark of landmarkPositions.slice(1)) {
       const distance = Vector3.DistanceSquared(position, landmark.position);
