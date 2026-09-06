@@ -8,7 +8,7 @@ import { PlayerController } from "./game/PlayerController";
 import { TrafficManager } from "./game/TrafficManager";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "city-expansion-v1-2026-09-06";
+const BUILD_ID = "mirage-final-city-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 
 function supportLabel(state: CharacterSupportedState): string {
@@ -27,7 +27,7 @@ async function bootstrap(): Promise<void> {
   const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
 
   const scene = new Scene(engine);
-  scene.clearColor = new Color4(0.62, 0.82, 0.96, 1);
+  scene.clearColor = new Color4(0.52, 0.72, 0.88, 1);
 
   const physics = new PhysicsManager();
   await physics.initialize(scene);
@@ -46,7 +46,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "780px";
+  panel.width = "800px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -54,7 +54,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — CITY EXPANSION V1";
+  title.text = "MIRAG CITY — FINAL CITY BUILD";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -63,8 +63,8 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "540px";
-  info.color = "#e8edf7";
+  info.height = "570px";
+  info.color = "#eef3fb";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.addControl(info);
@@ -74,7 +74,7 @@ async function bootstrap(): Promise<void> {
   let lastDamage = 0;
 
   engine.runRenderLoop(() => {
-    const dt = engine.getDeltaTime() / 1000;
+    const dt = Math.min(0.05, engine.getDeltaTime() / 1000);
     player.update(dt);
     traffic.update(dt);
     pedestrians.update(dt);
@@ -104,28 +104,25 @@ async function bootstrap(): Promise<void> {
     const floorY = player.getGroundPointY();
     const targetDistance = combatTarget.getDistanceFrom(player.root.position);
     const district = world.getDistrictAt(player.root.position);
+    const nearestLandmark = world.getNearestLandmark(player.root.position);
 
     info.text = [
       `Build: ${BUILD_ID}`,
-      `District: ${district}`,
+      `District: ${district} • Nearest activity: ${nearestLandmark}`,
       "WASD Move • Shift Sprint • Space Jump • F Punch • Mouse Orbit",
-      "City: Downtown • Old Town • Neon Quarter • Industrial Port • Beachfront • Hills",
+      "World: 760×760 • 6 districts • ring highway • flyovers • port • beach • hills",
+      "Activities: Bank Heist • Police Pursuit • Gang Territory • Street Race • Port Smuggling • Mansion Job",
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
-      `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
-      `Sprint key: ${player.isSprintActive() ? "DOWN" : "UP"}`,
-      `Jump triggered this frame: ${player.wasJumpTriggered() ? "YES" : "NO"}`,
-      `Attack triggered this frame: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
+      `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${player.isSprintActive() ? "DOWN" : "UP"}`,
+      `Jump: ${player.wasJumpTriggered() ? "YES" : "NO"} • Attack: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
       `Combo punch: ${player.getComboStep()}/4 • Hit window: ${hitWindow ? "ACTIVE" : "CLOSED"}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
-      `Vertical state: ${player.getVerticalVelocity().toFixed(2)} m/s`,
-      `Havok support: ${supportLabel(player.getSupportState())}`,
-      `Ground probe: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • Grounded: ${player.isGrounded() ? "YES" : "NO"}`,
-      `Y debug — center: ${player.getControllerCenterY().toFixed(3)} • physics feet: ${player.getComputedFeetY().toFixed(3)} • visual feet: ${player.getVisualFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
-      `Visual correction: ${player.getVisualFeetCorrectionY().toFixed(3)} m`,
-      `Animation state: ${player.getAnimationState().toUpperCase()}`,
-      `Visual: ${player.isUsingFallbackVisual() ? "fallback capsule (add public/assets/characters/player.glb)" : "player.glb"}`,
+      `Vertical: ${player.getVerticalVelocity().toFixed(2)} m/s • Havok: ${supportLabel(player.getSupportState())}`,
+      `Ground: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • ${player.isGrounded() ? "GROUNDED" : "AIR"}`,
+      `Y — center: ${player.getControllerCenterY().toFixed(3)} • feet: ${player.getComputedFeetY().toFixed(3)} • visual: ${player.getVisualFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
+      `Animation: ${player.getAnimationState().toUpperCase()} • Visual: ${player.isUsingFallbackVisual() ? "fallback capsule" : "player.glb"}`,
     ].join("\n");
 
     scene.render();
