@@ -1,0 +1,51 @@
+name: Blender City Preview
+
+on:
+  push:
+    branches:
+      - city-rebuild/tokyo-bangkok-v1
+    paths:
+      - 'blender/**'
+      - 'public/assets/city-kit/**'
+      - 'public/assets/neon-tech/**'
+      - '.github/workflows/blender-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Blender + headless GL dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender python3-numpy libegl1 libgl1 libglx-mesa0
+          blender --version
+          blender --background --python-expr "import numpy; print('Blender numpy', numpy.__version__)"
+
+      - name: Build city in Blender
+        run: blender --background --python blender/build_city.py
+
+      - name: Apply premium Downtown + Neon upgrade
+        run: blender --background --python blender/premium_upgrade.py
+
+      - name: Render review views
+        run: blender --background --python blender/render_preview.py
+
+      - name: List outputs
+        run: |
+          ls -lh blender/previews
+          ls -lh public/assets/city-generated || true
+
+      - name: Upload Blender city previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirag-city-blender-previews
+          path: blender/previews/*.png
+          if-no-files-found: error
+          retention-days: 14
