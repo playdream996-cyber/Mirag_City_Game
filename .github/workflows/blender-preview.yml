@@ -21,10 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Blender + GLTF dependencies
+      - name: Install Blender + headless GL dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender python3-numpy
+          sudo apt-get install -y blender python3-numpy libegl1 libgl1 libglx-mesa0
           blender --version
           blender --background --python-expr "import numpy; print('Blender numpy', numpy.__version__)"
 
