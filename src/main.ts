@@ -13,7 +13,7 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "city-population-navigation-2026-09-06";
+const BUILD_ID = "city-population-navigation-npc-models-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
 const CAMERA_LOOK_AHEAD = 3.4;
@@ -50,6 +50,7 @@ async function bootstrap(): Promise<void> {
   const vehicle = new VehicleController(scene, input, new Vector3(14, 0.65, 8));
   const traffic = new TrafficManager(scene);
   const pedestrians = new PedestrianManager(scene);
+  await pedestrians.initializeModels();
   const missions = new MissionManager(scene);
   const navigation = new NavigationSystem();
   const wanted = new WantedSystem();
@@ -187,7 +188,7 @@ async function bootstrap(): Promise<void> {
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      "City: ~1500×1500 expanded world • 54 traffic cars • 72 pedestrians • local population balancing",
+      `City: ~1500×1500 • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 uploaded animated NPC variants loaded`,
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
