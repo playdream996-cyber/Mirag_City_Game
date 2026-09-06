@@ -52,6 +52,12 @@ async function loadTemplate(scene: Scene, assetRoot: string, name: string): Prom
   };
 }
 
+function getAssetRoot(): string {
+  const path = window.location.pathname;
+  const repoBase = path.startsWith("/Mirag_City_Game/") ? "/Mirag_City_Game/" : "/";
+  return `${repoBase}assets/city-kit/`;
+}
+
 export async function buildCityExpansion(scene: Scene, physics: PhysicsManager): Promise<number> {
   for (const boundaryName of ["north-boundary", "south-boundary", "east-boundary", "west-boundary"]) {
     const boundary = scene.getTransformNodeByName(boundaryName) ?? scene.getMeshByName(boundaryName);
@@ -94,7 +100,7 @@ export async function buildCityExpansion(scene: Scene, physics: PhysicsManager):
     road.material = roadMat;
   }
 
-  const assetRoot = import.meta.env.BASE_URL + "assets/city-kit/";
+  const assetRoot = getAssetRoot();
   const templates: CityTemplate[] = [];
   for (const name of CITY_BUILDINGS) {
     try {
@@ -126,7 +132,7 @@ export async function buildCityExpansion(scene: Scene, physics: PhysicsManager):
 
       if (templates.length > 0) {
         const template = templates[index % templates.length];
-        const visual = template.root.clone(`city-kit-building-${index}`);
+        const visual = template.root.clone(`city-kit-building-${index}`, null);
         if (visual) {
           const baseScale = 0.88 * Math.min(width / template.width, depth / template.depth);
           const variation = 0.9 + (index % 5) * 0.04;
