@@ -11,8 +11,9 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "open-world-gameplay-v1-2026-09-06";
+const BUILD_ID = "open-world-gameplay-v1-errorfix-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
+const VEHICLE_INTERACT_DISTANCE = 4.5;
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -26,9 +27,10 @@ function supportLabel(state: CharacterSupportedState): string {
 }
 
 async function bootstrap(): Promise<void> {
-  const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
-  const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+  const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement | null;
+  if (!canvas) throw new Error("renderCanvas element was not found.");
 
+  const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.52, 0.72, 0.88, 1);
 
@@ -80,27 +82,30 @@ async function bootstrap(): Promise<void> {
   let lastDamage = 0;
   let vehicleMessage = "Walk near the red car and press E to enter.";
 
-  const enterVehicle = () => {
+  const enterVehicle = (): void => {
     vehicle.setOccupied(true);
-    player.root.setEnabled(false);
-    player.camera.detachControl();
+    player.setEnabled(false);
+    player.detachCamera(canvas);
     vehicle.attachCamera(canvas);
     scene.activeCamera = vehicle.camera;
     vehicleMessage = "DRIVING — WASD steer/drive • E exit";
   };
 
-  const exitVehicle = () => {
+  const exitVehicle = (): void => {
     vehicle.setOccupied(false);
-    vehicle.detachCamera();
-    player.root.position.copyFrom(vehicle.root.position.add(new Vector3(3.2, 0, 0)));
-    player.root.setEnabled(true);
+    vehicle.detachCamera(canvas);
+
+    const exitOffset = new Vector3(3.2, 0, 0);
+    const exitPosition = vehicle.root.position.add(exitOffset);
+    player.teleport(exitPosition);
+    player.setEnabled(true);
     player.attachCamera(canvas);
     scene.activeCamera = player.camera;
     vehicleMessage = "Exited vehicle.";
   };
 
   engine.runRenderLoop(() => {
-    const dt = Math.min(0.05, engine.getDeltaTime() / 1000);
+    const dt = Math.min(0.05, Math.max(0, engine.getDeltaTime() / 1000));
     const interactPressed = input.consumeInteract();
 
     if (vehicle.isOccupied) {
@@ -108,7 +113,9 @@ async function bootstrap(): Promise<void> {
       if (interactPressed) exitVehicle();
     } else {
       player.update(dt);
-      if (interactPressed && vehicle.distanceTo(player.root.position) <= 4.5) enterVehicle();
+      if (interactPressed && vehicle.distanceTo(player.root.position) <= VEHICLE_INTERACT_DISTANCE) {
+        enterVehicle();
+      }
     }
 
     traffic.update(dt);
@@ -118,7 +125,11 @@ async function bootstrap(): Promise<void> {
     hitFeedbackTimer = Math.max(0, hitFeedbackTimer - dt);
 
     const actorPosition = vehicle.isOccupied ? vehicle.root.position : player.root.position;
-    const missionInteract = interactPressed && !vehicle.isOccupied && vehicle.distanceTo(player.root.position) > 4.5;
+    const carDistance = vehicle.distanceTo(player.root.position);
+    const missionInteract =
+      interactPressed &&
+      !vehicle.isOccupied &&
+      carDistance > VEHICLE_INTERACT_DISTANCE;
     missions.update(actorPosition, missionInteract);
 
     const hitWindow = !vehicle.isOccupied && player.isMeleeHitActive();
@@ -146,10 +157,12 @@ async function bootstrap(): Promise<void> {
     const targetDistance = combatTarget.getDistanceFrom(actorPosition);
     const district = world.getDistrictAt(actorPosition);
     const nearestLandmark = world.getNearestLandmark(actorPosition);
-    const carDistance = vehicle.distanceTo(player.root.position);
 
-    if (!vehicle.isOccupied && carDistance <= 4.5) vehicleMessage = "Press E to enter vehicle";
-    else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") vehicleMessage = "Explore on foot or approach the red car.";
+    if (!vehicle.isOccupied && carDistance <= VEHICLE_INTERACT_DISTANCE) {
+      vehicleMessage = "Press E to enter vehicle";
+    } else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") {
+      vehicleMessage = "Explore on foot or approach the red car.";
+    }
 
     info.text = [
       `Build: ${BUILD_ID}`,
@@ -178,6 +191,7 @@ async function bootstrap(): Promise<void> {
   window.addEventListener("beforeunload", () => {
     input.dispose();
     physics.dispose();
+    engine.dispose();
   });
 }
 
