@@ -9,6 +9,7 @@ import {
   TransformNode,
   Vector3,
 } from "@babylonjs/core";
+import { getDistrictRule, pickNpcVariant, type NpcVariant } from "./DistrictRules";
 
 type Pedestrian = {
   root: TransformNode;
@@ -17,9 +18,10 @@ type Pedestrian = {
   boundsMin: Vector3;
   boundsMax: Vector3;
   fallbackVisual: TransformNode;
+  variant: NpcVariant;
 };
 
-const NPC_VARIANTS = [
+const NPC_VARIANTS: readonly NpcVariant[] = [
   "Suit",
   "Punk",
   "Worker",
@@ -28,7 +30,7 @@ const NPC_VARIANTS = [
   "Beach",
   "Swat",
   "Adventurer",
-] as const;
+];
 
 const NPC_TARGET_HEIGHT = 1.82;
 
@@ -49,7 +51,8 @@ export class PedestrianManager {
 
     for (let i = 0; i < 72; i++) {
       const center = centers[i % centers.length];
-      this.pedestrians.push(this.createPedestrian(center, i));
+      const variant = pickNpcVariant(center, i * 17 + center.x * 3 + center.z * 5);
+      this.pedestrians.push(this.createPedestrian(center, i, variant));
     }
   }
 
@@ -59,7 +62,7 @@ export class PedestrianManager {
       : "/assets/npcs/";
 
     await Promise.all(
-      NPC_VARIANTS.map(async (variant, variantIndex) => {
+      NPC_VARIANTS.map(async (variant) => {
         try {
           const result = await SceneLoader.ImportMeshAsync("", assetRoot, `${variant}.gltf`, this.scene);
           const templateRoot = new TransformNode(`npcTemplate-${variant}`, this.scene);
@@ -70,8 +73,7 @@ export class PedestrianManager {
 
           this.normalizeImportedModel(result.meshes, templateRoot);
 
-          // The first pedestrian for this variant uses the imported hierarchy directly.
-          const assigned = this.pedestrians.filter((_, index) => index % NPC_VARIANTS.length === variantIndex);
+          const assigned = this.pedestrians.filter((ped) => ped.variant === variant);
           if (assigned.length === 0) {
             templateRoot.dispose();
             return;
@@ -85,8 +87,6 @@ export class PedestrianManager {
           if (walk) walk.start(true, 1.0, walk.from, walk.to, false);
           else result.animationGroups[0]?.start(true);
 
-          // Clone the full visible hierarchy so all 72 pedestrians use the 8 uploaded variants.
-          // Clones share geometry/materials, keeping browser memory much lower than re-importing 72 files.
           for (let i = 1; i < assigned.length; i++) {
             const clone = templateRoot.clone(`npcModel-${variant}-${i}`, assigned[i].root, false);
             if (!clone) continue;
@@ -124,15 +124,20 @@ export class PedestrianManager {
     if (this.rebalanceTimer > 0) return;
     this.rebalanceTimer = 2.2;
 
+    const districtRule = getDistrictRule(focusPosition);
+    const targetVisible = Math.max(5, Math.round(14 * districtRule.pedestrianDensity));
+
     let visible = 0;
     for (const ped of this.pedestrians) {
       if (Vector3.DistanceSquared(ped.root.position, focusPosition) < 85 * 85) visible++;
     }
-    if (visible >= 14) return;
+    if (visible >= targetVisible) return;
 
+    const allowed = new Set<NpcVariant>(districtRule.npcVariants);
     const distant = this.pedestrians
+      .filter((ped) => allowed.has(ped.variant))
       .filter((ped) => Vector3.DistanceSquared(ped.root.position, focusPosition) > 180 * 180)
-      .slice(0, 16 - visible);
+      .slice(0, targetVisible - visible);
 
     for (let i = 0; i < distant.length; i++) {
       const ped = distant[i];
@@ -146,7 +151,7 @@ export class PedestrianManager {
     }
   }
 
-  private createPedestrian(center: Vector3, index: number): Pedestrian {
+  private createPedestrian(center: Vector3, index: number, variant: NpcVariant): Pedestrian {
     const root = new TransformNode(`pedestrian-${index}`, this.scene);
     const radius = index % 6 === 0 ? 26 : 18;
     const min = center.add(new Vector3(-radius,0,-radius));
@@ -185,6 +190,7 @@ export class PedestrianManager {
       boundsMin:min,
       boundsMax:max,
       fallbackVisual,
+      variant,
     };
   }
 
