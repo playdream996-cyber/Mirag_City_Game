@@ -12,10 +12,15 @@ export class PedestrianManager {
   private readonly pedestrians: Pedestrian[] = [];
 
   constructor(private readonly scene: Scene) {
-    for (let i = 0; i < 18; i++) {
-      const blockX = (i % 6) - 3;
-      const blockZ = Math.floor(i / 6) - 1;
-      const center = new Vector3(blockX * 38, 0, blockZ * 58);
+    const centers = [
+      new Vector3(-105, 0, -35), new Vector3(-35, 0, 35), new Vector3(35, 0, 35),
+      new Vector3(105, 0, 35), new Vector3(105, 0, -105), new Vector3(175, 0, 105),
+      new Vector3(-175, 0, 105), new Vector3(-175, 0, 175), new Vector3(-105, 0, -175),
+      new Vector3(-35, 0, -175), new Vector3(35, 0, -175), new Vector3(105, 0, -175),
+    ];
+
+    for (let i = 0; i < 30; i++) {
+      const center = centers[i % centers.length];
       this.pedestrians.push(this.createPedestrian(center, i));
     }
   }
@@ -38,13 +43,13 @@ export class PedestrianManager {
 
   private createPedestrian(center: Vector3, index: number): Pedestrian {
     const root = new TransformNode(`pedestrian-${index}`, this.scene);
-    const min = center.add(new Vector3(-10, 0, -8));
-    const max = center.add(new Vector3(10, 0, 8));
+    const min = center.add(new Vector3(-18, 0, -18));
+    const max = center.add(new Vector3(18, 0, 18));
     root.position.copyFrom(this.randomPoint(min, max));
     root.position.y = 1.0;
 
     const skin = new StandardMaterial(`pedSkin-${index}`, this.scene);
-    skin.diffuseColor = new Color3(0.78, 0.58 + (index % 3) * 0.05, 0.42);
+    skin.diffuseColor = new Color3(0.72 + (index % 3) * 0.04, 0.5 + (index % 4) * 0.04, 0.35);
 
     const shirt = new StandardMaterial(`pedShirt-${index}`, this.scene);
     shirt.diffuseColor = new Color3(
@@ -65,7 +70,7 @@ export class PedestrianManager {
     return {
       root,
       target: this.randomPoint(min, max),
-      speed: 1.1 + (index % 4) * 0.18,
+      speed: 1.0 + (index % 5) * 0.16,
       boundsMin: min,
       boundsMax: max,
     };
