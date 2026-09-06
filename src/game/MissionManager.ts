@@ -15,72 +15,18 @@ type Mission = {
 
 export class MissionManager {
   private readonly missions: Mission[] = [
-    {
-      id: "bank",
-      title: "Bank Heist",
-      objective: "Reach the getaway point after casing Central Bank.",
-      position: new Vector3(-37.5, 0, 13),
-      completionPosition: new Vector3(-150, 0, 0),
-      radius: 10,
-      completionRadius: 14,
-      status: "available",
-    },
-    {
-      id: "police",
-      title: "Police Pursuit",
-      objective: "Escape from Police HQ to the west boulevard.",
-      position: new Vector3(37.5, 0, 13),
-      completionPosition: new Vector3(-75, 0, 75),
-      radius: 10,
-      completionRadius: 14,
-      status: "available",
-    },
-    {
-      id: "gang",
-      title: "Gang Territory",
-      objective: "Move from the Old Town gang block to the safe corner.",
-      position: new Vector3(-187.5, 0, -13),
-      completionPosition: new Vector3(-300, 0, -75),
-      radius: 12,
-      completionRadius: 15,
-      status: "available",
-    },
-    {
-      id: "race",
-      title: "Street Race",
-      objective: "Reach the Neon Quarter finish checkpoint.",
-      position: new Vector3(112.5, 0, -75),
-      completionPosition: new Vector3(300, 0, -225),
-      radius: 12,
-      completionRadius: 18,
-      status: "available",
-    },
-    {
-      id: "port",
-      title: "Port Smuggling",
-      objective: "Deliver the pickup from the port to the east highway exit.",
-      position: new Vector3(262.5, 0, 150),
-      completionPosition: new Vector3(340, 0, -75),
-      radius: 12,
-      completionRadius: 18,
-      status: "available",
-    },
-    {
-      id: "mansion",
-      title: "Mansion Job",
-      objective: "Leave the Hills mansion area and reach the Old Town handoff.",
-      position: new Vector3(-262.5, 0, 225),
-      completionPosition: new Vector3(-150, 0, 75),
-      radius: 12,
-      completionRadius: 16,
-      status: "available",
-    },
+    { id: "bank", title: "Bank Heist", objective: "Reach the getaway point after casing Central Bank.", position: new Vector3(-37.5, 0, 13), completionPosition: new Vector3(-150, 0, 0), radius: 10, completionRadius: 14, status: "available" },
+    { id: "police", title: "Police Pursuit", objective: "Escape from Police HQ to the west boulevard.", position: new Vector3(37.5, 0, 13), completionPosition: new Vector3(-75, 0, 75), radius: 10, completionRadius: 14, status: "available" },
+    { id: "gang", title: "Gang Territory", objective: "Move from the Old Town gang block to the safe corner.", position: new Vector3(-187.5, 0, -13), completionPosition: new Vector3(-300, 0, -75), radius: 12, completionRadius: 15, status: "available" },
+    { id: "race", title: "Street Race", objective: "Reach the Neon Quarter finish checkpoint.", position: new Vector3(112.5, 0, -75), completionPosition: new Vector3(300, 0, -225), radius: 12, completionRadius: 18, status: "available" },
+    { id: "port", title: "Port Smuggling", objective: "Deliver the pickup from the port to the east highway exit.", position: new Vector3(262.5, 0, 150), completionPosition: new Vector3(340, 0, -75), radius: 12, completionRadius: 18, status: "available" },
+    { id: "mansion", title: "Mansion Job", objective: "Leave the Hills mansion area and reach the Old Town handoff.", position: new Vector3(-262.5, 0, 225), completionPosition: new Vector3(-150, 0, 75), radius: 12, completionRadius: 16, status: "available" },
   ];
 
   private activeMission: Mission | null = null;
   private lastMessage = "Explore the city and approach a mission marker.";
 
-  constructor(scene: Scene) {
+  constructor(private readonly scene: Scene) {
     const markerMat = new StandardMaterial("missionMarkerMat", scene);
     markerMat.diffuseColor = new Color3(0.95, 0.68, 0.12);
     markerMat.emissiveColor = new Color3(0.35, 0.18, 0.02);
@@ -90,23 +36,14 @@ export class MissionManager {
     finishMat.emissiveColor = new Color3(0.02, 0.22, 0.08);
 
     for (const mission of this.missions) {
-      const marker = MeshBuilder.CreateCylinder(
-        `mission-${mission.id}`,
-        { diameter: 3.4, height: 0.18, tessellation: 28 },
-        scene,
-      );
+      const marker = MeshBuilder.CreateCylinder(`mission-${mission.id}`, { diameter: 3.4, height: 0.18, tessellation: 28 }, scene);
       marker.position = mission.position.add(new Vector3(0, 0.12, 0));
       marker.material = markerMat;
 
-      const finish = MeshBuilder.CreateCylinder(
-        `mission-finish-${mission.id}`,
-        { diameter: 3.0, height: 0.12, tessellation: 28 },
-        scene,
-      );
+      const finish = MeshBuilder.CreateCylinder(`mission-finish-${mission.id}`, { diameter: 3.0, height: 0.12, tessellation: 28 }, scene);
       finish.position = mission.completionPosition.add(new Vector3(0, 0.08, 0));
       finish.material = finishMat;
       finish.setEnabled(false);
-      finish.metadata = { missionId: mission.id, kind: "finish" };
     }
   }
 
@@ -148,9 +85,7 @@ export class MissionManager {
   }
 
   getHudText(): string {
-    return this.activeMission
-      ? `MISSION: ${this.activeMission.title} — ${this.lastMessage}`
-      : this.lastMessage;
+    return this.activeMission ? `MISSION: ${this.lastMessage}` : this.lastMessage;
   }
 
   private getNearestAvailable(position: Vector3): Mission | null {
@@ -168,7 +103,6 @@ export class MissionManager {
   }
 
   private setFinishMarkerVisible(missionId: string, visible: boolean): void {
-    const marker = this.scene.getMeshByName(`mission-finish-${missionId}`);
-    marker?.setEnabled(visible);
+    this.scene.getMeshByName(`mission-finish-${missionId}`)?.setEnabled(visible);
   }
 }
