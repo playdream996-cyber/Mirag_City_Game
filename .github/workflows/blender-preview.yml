@@ -31,6 +31,9 @@ jobs:
       - name: Build city in Blender
         run: blender --background --python blender/build_city.py
 
+      - name: Apply premium Downtown + Neon upgrade
+        run: blender --background --python blender/premium_upgrade.py
+
       - name: Render review views
         run: blender --background --python blender/render_preview.py
 
