@@ -10,20 +10,18 @@ PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(BLEND_PATH))
 scene = bpy.context.scene
 
-# Fast structural review renderer: show the actual Blender geometry/material colors
-# without spending CI time on final lighting.
+# Very fast structural review: actual scene geometry/material colors, minimal shading cost.
 scene.render.engine = 'BLENDER_WORKBENCH'
-scene.render.resolution_x = 1024
-scene.render.resolution_y = 576
+scene.render.resolution_x = 768
+scene.render.resolution_y = 432
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = 'PNG'
 scene.render.film_transparent = False
-scene.display.shading.light = 'STUDIO'
+scene.display.shading.light = 'FLAT'
 scene.display.shading.color_type = 'MATERIAL'
-scene.display.shading.show_shadows = True
-scene.display.shading.show_cavity = True
-scene.display.shading.cavity_type = 'WORLD'
-scene.display.shading.show_specular_highlight = True
+scene.display.shading.show_shadows = False
+scene.display.shading.show_cavity = False
+scene.display.shading.show_specular_highlight = False
 scene.display.shading.background_type = 'THEME'
 
 for obj in list(scene.objects):
@@ -56,4 +54,4 @@ render("02_downtown_neon", (520, -520, 300), (40, 80, 50), 55)
 render("03_canal_riverside", (-650, -500, 245), (-70, -150, 35), 58)
 render("04_marina_docks", (720, -820, 250), (250, -420, 25), 58)
 
-print(f"[PREVIEW] Rendered structural review images to {PREVIEW_DIR}")
+print(f"[PREVIEW] Rendered lightweight structural review images to {PREVIEW_DIR}")
