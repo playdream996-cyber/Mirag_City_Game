@@ -1,10 +1,11 @@
 import { Color3, MeshBuilder, Scene, StandardMaterial, TransformNode, Vector3 } from "@babylonjs/core";
+import { getDistrictRule } from "./DistrictRules";
 
 type TrafficCar = {
   root: TransformNode;
   route: Vector3[];
   targetIndex: number;
-  speed: number;
+  baseSpeed: number;
 };
 
 export class TrafficManager {
@@ -42,7 +43,8 @@ export class TrafficManager {
         continue;
       }
       const dir = toTarget.normalize();
-      car.root.position.addInPlace(dir.scale(car.speed * dt));
+      const speedMultiplier = getDistrictRule(car.root.position).trafficSpeedMultiplier;
+      car.root.position.addInPlace(dir.scale(car.baseSpeed * speedMultiplier * dt));
       car.root.rotation.y = Math.atan2(dir.x, dir.z);
     }
 
@@ -51,15 +53,18 @@ export class TrafficManager {
     if (this.rebalanceTimer > 0) return;
     this.rebalanceTimer = 2.5;
 
+    const districtRule = getDistrictRule(focusPosition);
+    const targetVisible = Math.max(4, Math.round(10 * districtRule.trafficDensity));
+
     let visible = 0;
     for (const car of this.cars) {
       if (Vector3.DistanceSquared(car.root.position, focusPosition) < 220 * 220) visible++;
     }
-    if (visible >= 10) return;
+    if (visible >= targetVisible) return;
 
     const distant = this.cars
       .filter((car) => Vector3.DistanceSquared(car.root.position, focusPosition) > 320 * 320)
-      .slice(0, 12 - visible);
+      .slice(0, targetVisible - visible);
 
     for (let i = 0; i < distant.length; i++) {
       const car = distant[i];
@@ -79,7 +84,7 @@ export class TrafficManager {
     return (best + offset) % route.length;
   }
 
-  private createCar(route: Vector3[], startIndex: number, color: Color3, speed: number): TrafficCar {
+  private createCar(route: Vector3[], startIndex: number, color: Color3, baseSpeed: number): TrafficCar {
     const index = this.cars.length;
     const root = new TransformNode(`trafficCar-${index}`, this.scene);
     root.position.copyFrom(route[startIndex]);
@@ -92,7 +97,7 @@ export class TrafficManager {
     cabinMat.diffuseColor = new Color3(0.08,0.13,0.19);
     const cabin = MeshBuilder.CreateBox(`trafficCabin-${index}`, { width:1.55, height:0.55, depth:1.9 }, this.scene);
     cabin.parent = root; cabin.position = new Vector3(0,1.25,-0.1); cabin.material = cabinMat;
-    return { root, route, targetIndex:(startIndex+1)%route.length, speed };
+    return { root, route, targetIndex:(startIndex+1)%route.length, baseSpeed };
   }
 
   private horizontalLoop(z:number):Vector3[]{ const l=3.8; return [new Vector3(-330,.35,z+l),new Vector3(330,.35,z+l),new Vector3(330,.35,z-l),new Vector3(-330,.35,z-l)]; }
