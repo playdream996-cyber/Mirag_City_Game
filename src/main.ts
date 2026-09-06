@@ -2,14 +2,18 @@ import { CharacterSupportedState, Color4, Engine, Scene, Vector3 } from "@babylo
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
 import { CombatTarget } from "./game/CombatTarget";
 import { InputController } from "./game/InputController";
+import { MissionManager } from "./game/MissionManager";
 import { PedestrianManager } from "./game/PedestrianManager";
 import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { TrafficManager } from "./game/TrafficManager";
+import { VehicleController } from "./game/VehicleController";
+import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "mirage-final-city-2026-09-06";
+const BUILD_ID = "open-world-gameplay-v1-errorfix-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
+const VEHICLE_INTERACT_DISTANCE = 4.5;
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -23,9 +27,10 @@ function supportLabel(state: CharacterSupportedState): string {
 }
 
 async function bootstrap(): Promise<void> {
-  const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
-  const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+  const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement | null;
+  if (!canvas) throw new Error("renderCanvas element was not found.");
 
+  const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.52, 0.72, 0.88, 1);
 
@@ -37,8 +42,11 @@ async function bootstrap(): Promise<void> {
   const player = new PlayerController(scene, input);
   await player.initializeVisual();
 
+  const vehicle = new VehicleController(scene, input, new Vector3(14, 0.65, 8));
   const traffic = new TrafficManager(scene);
   const pedestrians = new PedestrianManager(scene);
+  const missions = new MissionManager(scene);
+  const wanted = new WantedSystem();
   const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
 
   player.attachCamera(canvas);
@@ -46,7 +54,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "800px";
+  panel.width = "830px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -54,7 +62,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — FINAL CITY BUILD";
+  title.text = "MIRAG CITY — OPEN WORLD GAMEPLAY V1";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -63,7 +71,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "570px";
+  info.height = "620px";
   info.color = "#eef3fb";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -72,16 +80,59 @@ async function bootstrap(): Promise<void> {
   let previousHitWindow = false;
   let hitFeedbackTimer = 0;
   let lastDamage = 0;
+  let vehicleMessage = "Walk near the red car and press E to enter.";
+
+  const enterVehicle = (): void => {
+    vehicle.setOccupied(true);
+    player.setEnabled(false);
+    player.detachCamera(canvas);
+    vehicle.attachCamera(canvas);
+    scene.activeCamera = vehicle.camera;
+    vehicleMessage = "DRIVING — WASD steer/drive • E exit";
+  };
+
+  const exitVehicle = (): void => {
+    vehicle.setOccupied(false);
+    vehicle.detachCamera(canvas);
+
+    const exitOffset = new Vector3(3.2, 0, 0);
+    const exitPosition = vehicle.root.position.add(exitOffset);
+    player.teleport(exitPosition);
+    player.setEnabled(true);
+    player.attachCamera(canvas);
+    scene.activeCamera = player.camera;
+    vehicleMessage = "Exited vehicle.";
+  };
 
   engine.runRenderLoop(() => {
-    const dt = Math.min(0.05, engine.getDeltaTime() / 1000);
-    player.update(dt);
+    const dt = Math.min(0.05, Math.max(0, engine.getDeltaTime() / 1000));
+    const interactPressed = input.consumeInteract();
+
+    if (vehicle.isOccupied) {
+      vehicle.update(dt);
+      if (interactPressed) exitVehicle();
+    } else {
+      player.update(dt);
+      if (interactPressed && vehicle.distanceTo(player.root.position) <= VEHICLE_INTERACT_DISTANCE) {
+        enterVehicle();
+      }
+    }
+
     traffic.update(dt);
     pedestrians.update(dt);
     combatTarget.update(dt);
+    wanted.update(dt);
     hitFeedbackTimer = Math.max(0, hitFeedbackTimer - dt);
 
-    const hitWindow = player.isMeleeHitActive();
+    const actorPosition = vehicle.isOccupied ? vehicle.root.position : player.root.position;
+    const carDistance = vehicle.distanceTo(player.root.position);
+    const missionInteract =
+      interactPressed &&
+      !vehicle.isOccupied &&
+      carDistance > VEHICLE_INTERACT_DISTANCE;
+    missions.update(actorPosition, missionInteract);
+
+    const hitWindow = !vehicle.isOccupied && player.isMeleeHitActive();
     if (hitWindow && !previousHitWindow) {
       const comboIndex = Math.max(0, Math.min(3, player.getComboStep() - 1));
       const damage = COMBO_DAMAGE[comboIndex];
@@ -94,35 +145,43 @@ async function bootstrap(): Promise<void> {
       if (combatTarget.tryReceiveMeleeHit(player.root.position, facing, damage)) {
         lastDamage = damage;
         hitFeedbackTimer = 0.35;
+        wanted.addCrime(0.7);
       }
     }
     previousHitWindow = hitWindow;
 
-    const velocity = player.getVelocity();
-    const desired = player.getDesiredVelocity();
-    const probeDistance = player.getGroundProbeDistance();
-    const floorY = player.getGroundPointY();
-    const targetDistance = combatTarget.getDistanceFrom(player.root.position);
-    const district = world.getDistrictAt(player.root.position);
-    const nearestLandmark = world.getNearestLandmark(player.root.position);
+    const velocity = vehicle.isOccupied ? Vector3.Zero() : player.getVelocity();
+    const desired = vehicle.isOccupied ? Vector3.Zero() : player.getDesiredVelocity();
+    const probeDistance = vehicle.isOccupied ? 0 : player.getGroundProbeDistance();
+    const floorY = vehicle.isOccupied ? vehicle.root.position.y : player.getGroundPointY();
+    const targetDistance = combatTarget.getDistanceFrom(actorPosition);
+    const district = world.getDistrictAt(actorPosition);
+    const nearestLandmark = world.getNearestLandmark(actorPosition);
+
+    if (!vehicle.isOccupied && carDistance <= VEHICLE_INTERACT_DISTANCE) {
+      vehicleMessage = "Press E to enter vehicle";
+    } else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") {
+      vehicleMessage = "Explore on foot or approach the red car.";
+    }
 
     info.text = [
       `Build: ${BUILD_ID}`,
       `District: ${district} • Nearest activity: ${nearestLandmark}`,
-      "WASD Move • Shift Sprint • Space Jump • F Punch • Mouse Orbit",
-      "World: 760×760 • 6 districts • ring highway • flyovers • port • beach • hills",
-      "Activities: Bank Heist • Police Pursuit • Gang Territory • Street Race • Port Smuggling • Mansion Job",
+      wanted.getHudText(),
+      missions.getHudText(),
+      `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
+      "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
+      "World activities: Bank Heist • Police Pursuit • Gang Territory • Street Race • Port Smuggling • Mansion Job",
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
-      `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${player.isSprintActive() ? "DOWN" : "UP"}`,
-      `Jump: ${player.wasJumpTriggered() ? "YES" : "NO"} • Attack: ${player.wasAttackTriggered() ? "YES" : "NO"}`,
-      `Combo punch: ${player.getComboStep()}/4 • Hit window: ${hitWindow ? "ACTIVE" : "CLOSED"}`,
+      `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
+      `Combo punch: ${vehicle.isOccupied ? "disabled in vehicle" : `${player.getComboStep()}/4 • Hit window: ${hitWindow ? "ACTIVE" : "CLOSED"}`}`,
       `Desired velocity: ${desired.x.toFixed(2)}, ${desired.y.toFixed(2)}, ${desired.z.toFixed(2)}`,
       `Physics velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}, ${velocity.z.toFixed(2)}`,
-      `Vertical: ${player.getVerticalVelocity().toFixed(2)} m/s • Havok: ${supportLabel(player.getSupportState())}`,
-      `Ground: ${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • ${player.isGrounded() ? "GROUNDED" : "AIR"}`,
-      `Y — center: ${player.getControllerCenterY().toFixed(3)} • feet: ${player.getComputedFeetY().toFixed(3)} • visual: ${player.getVisualFeetY().toFixed(3)} • floor: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
-      `Animation: ${player.getAnimationState().toUpperCase()} • Visual: ${player.isUsingFallbackVisual() ? "fallback capsule" : "player.glb"}`,
+      `Vertical: ${vehicle.isOccupied ? "vehicle mode" : `${player.getVerticalVelocity().toFixed(2)} m/s • Havok: ${supportLabel(player.getSupportState())}`}`,
+      `Ground: ${vehicle.isOccupied ? "vehicle" : `${player.isGroundProbeHit() ? `HIT (${probeDistance.toFixed(3)}m)` : "MISS"} • ${player.isGrounded() ? "GROUNDED" : "AIR"}`}`,
+      `Floor/actor Y: ${Number.isFinite(floorY) ? floorY.toFixed(3) : "N/A"}`,
+      `Animation: ${vehicle.isOccupied ? "DRIVING" : player.getAnimationState().toUpperCase()} • Visual: ${player.isUsingFallbackVisual() ? "fallback capsule" : "player.glb"}`,
     ].join("\n");
 
     scene.render();
@@ -132,6 +191,7 @@ async function bootstrap(): Promise<void> {
   window.addEventListener("beforeunload", () => {
     input.dispose();
     physics.dispose();
+    engine.dispose();
   });
 }
 
