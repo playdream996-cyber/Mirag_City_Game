@@ -3,6 +3,8 @@ import {
   Color3,
   Color4,
   GlowLayer,
+  HemisphericLight,
+  InstancedMesh,
   Mesh,
   MeshBuilder,
   Scene,
@@ -47,7 +49,6 @@ const NEON_MODELS = [
 ] as const;
 
 const CORE_BLOCKS = [-337.5, -262.5, -187.5, -112.5, -37.5, 37.5, 112.5, 187.5, 262.5, 337.5] as const;
-const CORE_ROADS = [-300, -225, -150, -75, 0, 75, 150, 225, 300] as const;
 const OUTER_ROADS = [-660, -540, -420, 420, 540, 660] as const;
 
 const LANDMARK_CELLS = new Set([
@@ -106,7 +107,7 @@ function makeMaterial(scene: Scene, name: string, color: Color3, emissive?: Colo
 
 function applyMirageLighting(scene: Scene): GlowLayer {
   const hemi = scene.getLightByName("hemi");
-  if (hemi) {
+  if (hemi instanceof HemisphericLight) {
     hemi.intensity = 0.82;
     hemi.diffuse = new Color3(0.72, 0.82, 1.0);
     hemi.groundColor = new Color3(0.16, 0.12, 0.18);
@@ -159,7 +160,7 @@ function createInstance(
   targetDepth: number,
   heightMultiplier = 1,
   rotationY = 0,
-): Mesh {
+): InstancedMesh {
   const instance = template.mesh.createInstance(name);
   const horizontalScale = Math.min(targetWidth / template.width, targetDepth / template.depth);
   instance.scaling = new Vector3(horizontalScale, horizontalScale * heightMultiplier, horizontalScale);
@@ -170,11 +171,11 @@ function createInstance(
 }
 
 function districtHeightMultiplier(x: number, z: number, roll: number): number {
-  if (x > 95 && z < 95) return 0.9 + roll * 0.7; // Neon Quarter
-  if (Math.abs(x) < 120 && Math.abs(z) < 170) return 1.25 + roll * 1.35; // Downtown
-  if (x < -105) return 0.72 + roll * 0.45; // Old Town
-  if (x > 160 && z > 70) return 0.62 + roll * 0.35; // Port
-  if (z < -205) return 0.78 + roll * 0.55; // Beachfront
+  if (x > 95 && z < 95) return 0.9 + roll * 0.7;
+  if (Math.abs(x) < 120 && Math.abs(z) < 170) return 1.25 + roll * 1.35;
+  if (x < -105) return 0.72 + roll * 0.45;
+  if (x > 160 && z > 70) return 0.62 + roll * 0.35;
+  if (z < -205) return 0.78 + roll * 0.55;
   return 0.8 + roll * 0.65;
 }
 
@@ -185,9 +186,7 @@ function placeCoreCity(scene: Scene, templates: CityTemplate[]): number {
   for (const cx of CORE_BLOCKS) {
     for (const cz of CORE_BLOCKS) {
       if (LANDMARK_CELLS.has(`${cx},${cz}`)) continue;
-
-      const openRoll = hash01(cx, cz, 90);
-      if (openRoll > 0.88) continue;
+      if (hash01(cx, cz, 90) > 0.88) continue;
 
       const neonQuarter = cx > 95 && cz < 95;
       const buildingCount = neonQuarter ? 3 : hash01(cx, cz, 3) > 0.52 ? 2 : 1;
@@ -195,12 +194,11 @@ function placeCoreCity(scene: Scene, templates: CityTemplate[]): number {
       for (let i = 0; i < buildingCount; i++) {
         const template = templates[(count + i + Math.floor(hash01(cx, cz, 12) * templates.length)) % templates.length];
         const spread = buildingCount === 1 ? 0 : 13.5;
-        const offsetX = buildingCount === 1 ? 0 : (i % 2 === 0 ? -spread : spread);
-        const offsetZ = buildingCount < 3 ? 0 : (i === 2 ? 14 : -8);
+        const offsetX = buildingCount === 1 ? 0 : i % 2 === 0 ? -spread : spread;
+        const offsetZ = buildingCount < 3 ? 0 : i === 2 ? 14 : -8;
         const lotWidth = buildingCount === 1 ? 45 : 23;
         const lotDepth = buildingCount === 1 ? 44 : 24;
-        const roll = hash01(cx, cz, 30 + i);
-        const h = districtHeightMultiplier(cx, cz, roll);
+        const h = districtHeightMultiplier(cx, cz, hash01(cx, cz, 30 + i));
         createInstance(
           template,
           `modular-core-building-${count}`,
@@ -303,7 +301,7 @@ function placeRoadKit(scene: Scene, roadTemplates: Map<string, CityTemplate>, si
   return count;
 }
 
-function tintNeonMesh(mesh: Mesh, scene: Scene, glow: GlowLayer, index: number): void {
+function tintNeonMesh(mesh: InstancedMesh, scene: Scene, glow: GlowLayer, index: number): void {
   const colors = [
     new Color3(0.0, 0.95, 1.0),
     new Color3(1.0, 0.04, 0.72),
