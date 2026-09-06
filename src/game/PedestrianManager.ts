@@ -60,28 +60,43 @@ export class PedestrianManager {
 
     await Promise.all(
       NPC_VARIANTS.map(async (variant, variantIndex) => {
-        const pedestrian = this.pedestrians[variantIndex * 2];
-        if (!pedestrian) return;
-
         try {
           const result = await SceneLoader.ImportMeshAsync("", assetRoot, `${variant}.gltf`, this.scene);
-          const modelRoot = new TransformNode(`npcModel-${variant}`, this.scene);
-          modelRoot.parent = pedestrian.root;
+          const templateRoot = new TransformNode(`npcTemplate-${variant}`, this.scene);
 
           const importedTopLevel = result.meshes.filter((mesh) => !mesh.parent);
-          for (const mesh of importedTopLevel) mesh.parent = modelRoot;
+          for (const mesh of importedTopLevel) mesh.parent = templateRoot;
           for (const mesh of result.meshes) mesh.isPickable = false;
 
-          this.normalizeImportedModel(result.meshes, modelRoot);
-          pedestrian.fallbackVisual.setEnabled(false);
+          this.normalizeImportedModel(result.meshes, templateRoot);
+
+          // The first pedestrian for this variant uses the imported hierarchy directly.
+          const assigned = this.pedestrians.filter((_, index) => index % NPC_VARIANTS.length === variantIndex);
+          if (assigned.length === 0) {
+            templateRoot.dispose();
+            return;
+          }
+
+          templateRoot.parent = assigned[0].root;
+          templateRoot.name = `npcModel-${variant}-0`;
+          assigned[0].fallbackVisual.setEnabled(false);
 
           const walk = result.animationGroups.find((group) => group.name.toLowerCase() === "walk");
           if (walk) walk.start(true, 1.0, walk.from, walk.to, false);
           else result.animationGroups[0]?.start(true);
 
+          // Clone the full visible hierarchy so all 72 pedestrians use the 8 uploaded variants.
+          // Clones share geometry/materials, keeping browser memory much lower than re-importing 72 files.
+          for (let i = 1; i < assigned.length; i++) {
+            const clone = templateRoot.clone(`npcModel-${variant}-${i}`, assigned[i].root, false);
+            if (!clone) continue;
+            clone.setEnabled(true);
+            assigned[i].fallbackVisual.setEnabled(false);
+          }
+
           this.loadedModelCount++;
         } catch (error) {
-          console.warn(`NPC model ${variant}.gltf could not be loaded; keeping fallback pedestrian.`, error);
+          console.warn(`NPC model ${variant}.gltf could not be loaded; keeping fallback pedestrians for this variant.`, error);
         }
       }),
     );
