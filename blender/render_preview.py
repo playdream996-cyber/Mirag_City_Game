@@ -1,5 +1,4 @@
 import bpy
-import math
 from pathlib import Path
 from mathutils import Vector
 
@@ -11,38 +10,25 @@ PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(BLEND_PATH))
 scene = bpy.context.scene
 
-# Clean previous preview-only cameras/lights.
-for obj in list(scene.objects):
-    if obj.name.startswith("PREVIEW_"):
-        bpy.data.objects.remove(obj, do_unlink=True)
-
-# Ubuntu 24.04 currently ships Blender 4.0, whose Eevee id is BLENDER_EEVEE.
-# Newer Blender builds renamed it to BLENDER_EEVEE_NEXT, so choose whichever exists.
-engine_items = {item.identifier for item in scene.bl_rna.properties['render'].fixed_type.properties['engine'].enum_items}
-scene.render.engine = 'BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in engine_items else 'BLENDER_EEVEE'
-scene.render.resolution_x = 1280
-scene.render.resolution_y = 720
+# Fast structural review renderer: show the actual Blender geometry/material colors
+# without spending CI time on final lighting.
+scene.render.engine = 'BLENDER_WORKBENCH'
+scene.render.resolution_x = 1024
+scene.render.resolution_y = 576
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = 'PNG'
 scene.render.film_transparent = False
+scene.display.shading.light = 'STUDIO'
+scene.display.shading.color_type = 'MATERIAL'
+scene.display.shading.show_shadows = True
+scene.display.shading.show_cavity = True
+scene.display.shading.cavity_type = 'WORLD'
+scene.display.shading.show_specular_highlight = True
+scene.display.shading.background_type = 'WORLD_THEME'
 
-# Neutral daylight so geometry/readability matters more than effects.
-scene.world.color = (0.055, 0.075, 0.11)
-
-sun_data = bpy.data.lights.new("PREVIEW_Sun", type='SUN')
-sun_data.energy = 3.2
-sun_data.angle = math.radians(18)
-sun = bpy.data.objects.new("PREVIEW_Sun", sun_data)
-scene.collection.objects.link(sun)
-sun.rotation_euler = (math.radians(28), math.radians(-18), math.radians(-32))
-
-fill_data = bpy.data.lights.new("PREVIEW_Fill", type='AREA')
-fill_data.energy = 2200
-fill_data.shape = 'DISK'
-fill_data.size = 900
-fill = bpy.data.objects.new("PREVIEW_Fill", fill_data)
-scene.collection.objects.link(fill)
-fill.location = (-180, -120, 650)
+for obj in list(scene.objects):
+    if obj.name.startswith("PREVIEW_"):
+        bpy.data.objects.remove(obj, do_unlink=True)
 
 
 def make_camera(name, location, target, lens=42):
@@ -65,13 +51,9 @@ def render(name, location, target, lens=42):
     bpy.ops.render.render(write_still=True)
     print(f"[PREVIEW] {scene.render.filepath}")
 
-# 1) Full map review view.
 render("01_full_city_aerial", (980, -1180, 1180), (0, -40, 0), 50)
-# 2) Downtown / Neon / river direction.
 render("02_downtown_neon", (520, -520, 300), (40, 80, 50), 55)
-# 3) Canal Town -> Riverside / skyline direction.
 render("03_canal_riverside", (-650, -500, 245), (-70, -150, 35), 58)
-# 4) Marina / industrial waterfront.
 render("04_marina_docks", (720, -820, 250), (250, -420, 25), 58)
 
-print(f"[PREVIEW] Rendered review images to {PREVIEW_DIR}")
+print(f"[PREVIEW] Rendered structural review images to {PREVIEW_DIR}")
