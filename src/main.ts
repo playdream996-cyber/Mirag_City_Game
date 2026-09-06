@@ -2,6 +2,7 @@ import { CharacterSupportedState, Color4, Engine, Scene, Vector3 } from "@babylo
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
 import { CombatTarget } from "./game/CombatTarget";
 import { buildCityExpansion } from "./game/CityExpansion";
+import { getMapDistrict } from "./game/DistrictRules";
 import { InputController } from "./game/InputController";
 import { MissionManager } from "./game/MissionManager";
 import { NavigationSystem } from "./game/NavigationSystem";
@@ -13,7 +14,7 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "quaternius-city-environment-2026-09-06";
+const BUILD_ID = "tokyo-bangkok-district-map-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
 const CAMERA_LOOK_AHEAD = 3.4;
@@ -78,7 +79,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — OPEN WORLD GAMEPLAY";
+  title.text = "MIRAG CITY — TOKYO × BANGKOK OPEN WORLD";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -171,7 +172,8 @@ async function bootstrap(): Promise<void> {
     const probeDistance = vehicle.isOccupied ? 0 : player.getGroundProbeDistance();
     const floorY = vehicle.isOccupied ? vehicle.root.position.y : player.getGroundPointY();
     const targetDistance = combatTarget.getDistanceFrom(actorPosition);
-    const district = world.getDistrictAt(actorPosition);
+    const mapDistrict = getMapDistrict(actorPosition);
+    const legacyDistrict = world.getDistrictAt(actorPosition);
     const nearestLandmark = world.getNearestLandmark(actorPosition);
     const actorYaw = vehicle.isOccupied ? vehicle.root.rotation.y : player.root.rotation.y;
     const navTarget = missions.getNavigationTarget(actorPosition);
@@ -182,13 +184,13 @@ async function bootstrap(): Promise<void> {
 
     info.text = [
       `Build: ${BUILD_ID}`,
-      `District: ${district} • Nearest activity: ${nearestLandmark}`,
+      `Map District: ${mapDistrict} • Legacy zone: ${legacyDistrict} • Nearest activity: ${nearestLandmark}`,
       navText,
       wanted.getHudText(),
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      `City: ~1500×1500 • ${cityKitBuildingCount} Quaternius buildings • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 uploaded animated NPC variants loaded`,
+      `City: Tokyo×Bangkok rule map • ~1500×1500 • ${cityKitBuildingCount} modular buildings • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 NPC variants loaded`,
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
