@@ -51,7 +51,6 @@ export class MissionManager {
     if (this.activeMission) {
       const finishDistance = Vector3.Distance(actorPosition, this.activeMission.completionPosition);
       this.setFinishMarkerVisible(this.activeMission.id, true);
-
       if (finishDistance <= this.activeMission.completionRadius) {
         this.activeMission.status = "complete";
         this.lastMessage = `${this.activeMission.title} complete.`;
@@ -59,7 +58,6 @@ export class MissionManager {
         this.activeMission = null;
         return;
       }
-
       this.lastMessage = `${this.activeMission.title}: ${this.activeMission.objective} (${Math.round(finishDistance)}m)`;
       return;
     }
@@ -86,6 +84,16 @@ export class MissionManager {
 
   getHudText(): string {
     return this.activeMission ? `MISSION: ${this.lastMessage}` : this.lastMessage;
+  }
+
+  getNavigationTarget(position: Vector3): Vector3 | null {
+    if (this.activeMission) return this.activeMission.completionPosition.clone();
+    return this.getNearestAvailable(position)?.position.clone() ?? null;
+  }
+
+  getNavigationLabel(position: Vector3): string {
+    if (this.activeMission) return `${this.activeMission.title} finish`;
+    return this.getNearestAvailable(position)?.title ?? "Explore";
   }
 
   private getNearestAvailable(position: Vector3): Mission | null {
