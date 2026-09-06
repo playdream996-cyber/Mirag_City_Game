@@ -3,6 +3,7 @@ import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylon
 import { CombatTarget } from "./game/CombatTarget";
 import { buildCityExpansion } from "./game/CityExpansion";
 import { getMapDistrict } from "./game/DistrictRules";
+import { buildEnvironmentDressing } from "./game/EnvironmentDressing";
 import { InputController } from "./game/InputController";
 import { MissionManager } from "./game/MissionManager";
 import { NavigationSystem } from "./game/NavigationSystem";
@@ -14,7 +15,7 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "tokyo-bangkok-district-map-2026-09-06";
+const BUILD_ID = "tokyo-bangkok-environment-dressing-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
 const CAMERA_LOOK_AHEAD = 3.4;
@@ -43,6 +44,7 @@ async function bootstrap(): Promise<void> {
   await physics.initialize(scene);
   const world = buildWorld(scene, physics);
   const cityKitBuildingCount = await buildCityExpansion(scene, physics);
+  const environmentObjectCount = buildEnvironmentDressing(scene, physics);
 
   const input = new InputController(scene);
   const player = new PlayerController(scene, input);
@@ -190,7 +192,7 @@ async function bootstrap(): Promise<void> {
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      `City: Tokyo×Bangkok rule map • ~1500×1500 • ${cityKitBuildingCount} modular buildings • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 NPC variants loaded`,
+      `City: Tokyo×Bangkok rule map • ~1500×1500 • ${cityKitBuildingCount} modular buildings • ${environmentObjectCount} environment props • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 NPC variants loaded`,
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
