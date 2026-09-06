@@ -24,7 +24,7 @@ scene.display.shading.show_shadows = True
 scene.display.shading.show_cavity = True
 scene.display.shading.cavity_type = 'WORLD'
 scene.display.shading.show_specular_highlight = True
-scene.display.shading.background_type = 'WORLD_THEME'
+scene.display.shading.background_type = 'THEME'
 
 for obj in list(scene.objects):
     if obj.name.startswith("PREVIEW_"):
