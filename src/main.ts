@@ -2,11 +2,13 @@ import { CharacterSupportedState, Color4, Engine, Scene, Vector3 } from "@babylo
 import { AdvancedDynamicTexture, Control, StackPanel, TextBlock } from "@babylonjs/gui";
 import { CombatTarget } from "./game/CombatTarget";
 import { InputController } from "./game/InputController";
+import { PedestrianManager } from "./game/PedestrianManager";
 import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
+import { TrafficManager } from "./game/TrafficManager";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "phase2-enemyhp-2026-09-03-18";
+const BUILD_ID = "city-expansion-v1-2026-09-06";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 
 function supportLabel(state: CharacterSupportedState): string {
@@ -29,12 +31,14 @@ async function bootstrap(): Promise<void> {
 
   const physics = new PhysicsManager();
   await physics.initialize(scene);
-  buildWorld(scene, physics);
+  const world = buildWorld(scene, physics);
 
   const input = new InputController(scene);
   const player = new PlayerController(scene, input);
   await player.initializeVisual();
 
+  const traffic = new TrafficManager(scene);
+  const pedestrians = new PedestrianManager(scene);
   const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
 
   player.attachCamera(canvas);
@@ -50,7 +54,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — PHASE 2 MELEE DAMAGE TEST";
+  title.text = "MIRAG CITY — CITY EXPANSION V1";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -59,7 +63,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "500px";
+  info.height = "540px";
   info.color = "#e8edf7";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -72,6 +76,8 @@ async function bootstrap(): Promise<void> {
   engine.runRenderLoop(() => {
     const dt = engine.getDeltaTime() / 1000;
     player.update(dt);
+    traffic.update(dt);
+    pedestrians.update(dt);
     combatTarget.update(dt);
     hitFeedbackTimer = Math.max(0, hitFeedbackTimer - dt);
 
@@ -97,10 +103,13 @@ async function bootstrap(): Promise<void> {
     const probeDistance = player.getGroundProbeDistance();
     const floorY = player.getGroundPointY();
     const targetDistance = combatTarget.getDistanceFrom(player.root.position);
+    const district = world.getDistrictAt(player.root.position);
 
     info.text = [
       `Build: ${BUILD_ID}`,
+      `District: ${district}`,
       "WASD Move • Shift Sprint • Space Jump • F Punch • Mouse Orbit",
+      "City: Downtown • Old Town • Neon Quarter • Industrial Port • Beachfront • Hills",
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Input: ${player.hasMovementInput() ? "MOVING" : "IDLE"}`,
