@@ -10,6 +10,17 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { PhysicsManager } from "./PhysicsManager";
+import {
+  MIRAGE_ARC_ROADS,
+  MIRAGE_BRIDGES,
+  MIRAGE_BUILDING_ROWS,
+  MIRAGE_ELEVATED_FREEWAY,
+  MIRAGE_LANDMARKS,
+  MIRAGE_ROADS,
+  type BuildingTemplateName,
+  type PlanPoint,
+  type RoadClass,
+} from "./MirageCityMasterPlan";
 
 type Template = {
   mesh: Mesh;
@@ -18,21 +29,11 @@ type Template = {
   minY: number;
 };
 
-type DistrictSpec = {
-  name: string;
-  center: Vector3;
-  radiusX: number;
-  radiusZ: number;
-  count: number;
-  minWidth: number;
-  maxWidth: number;
-  minHeight: number;
-  maxHeight: number;
-  templateOrder: string[];
-  clearCentral?: boolean;
-};
-
-const BUILDING_FILES = ["Building_Large_2", "Building_Medium_2_001", "Building_Small_1"] as const;
+const BUILDING_FILES: readonly BuildingTemplateName[] = [
+  "Building_Large_2",
+  "Building_Medium_2_001",
+  "Building_Small_1",
+];
 
 function getBasePath(folder: string): string {
   const repoBase = window.location.pathname.startsWith("/Mirag_City_Game/") ? "/Mirag_City_Game/" : "/";
@@ -43,6 +44,7 @@ async function loadTemplate(scene: Scene, root: string, file: string): Promise<T
   const result = await SceneLoader.ImportMeshAsync(null, root, file, scene);
   const mesh = result.meshes.find((node): node is Mesh => node instanceof Mesh && node.getTotalVertices() > 0);
   if (!mesh) throw new Error(`No render mesh found in ${file}`);
+
   mesh.computeWorldMatrix(true);
   const bounds = mesh.getBoundingInfo().boundingBox;
   const min = bounds.minimumWorld;
@@ -50,6 +52,7 @@ async function loadTemplate(scene: Scene, root: string, file: string): Promise<T
   mesh.isPickable = false;
   mesh.receiveShadows = true;
   mesh.position.y -= 5000;
+
   return {
     mesh,
     width: Math.max(0.01, max.x - min.x),
@@ -84,39 +87,20 @@ function makeMaterial(scene: Scene, name: string, color: Color3, emissive?: Colo
   return mat;
 }
 
-function disposeLegacyGrid(scene: Scene, physics: PhysicsManager): void {
+function disposeLegacyCity(scene: Scene, physics: PhysicsManager): void {
   const prefixes = [
-    "modular-core-building-",
-    "modular-outer-building-",
-    "outer-building-collision-",
-    "outer-road-x-",
-    "outer-road-z-",
-    "kit-intersection-",
-    "kit-lane-",
-    "kit-sidewalk-",
-    "dense-downtown-midrise-",
-    "dense-market-shops-",
-    "dense-neon-shops-",
-    "dense-riverside-food-",
-    "dense-tech-lab-",
-    "dense-market-alley-",
-    "dense-neon-backstreet",
-    "dense-tech-connector",
-    "dense-market-connector",
-    "dense-coastal-link",
-    "dense-central-loop-",
-    "dense-nw-ring-",
-    "dense-ne-ring-",
-    "dense-sw-coast-",
-    "dense-se-port-",
-    "mcp-old-market-building-",
-    "mcp-canal-home-",
-    "mcp-downtown-tower-",
-    "mcp-riverside-hotel-",
-    "mcp-tech-lab-",
-    "mcp-expressway-",
-    "mcp-diagonal-",
-    "mcp-coastal-boulevard",
+    "modular-",
+    "outer-road-",
+    "outer-building-",
+    "kit-",
+    "dense-",
+    "mcp-",
+    "neon-floor-",
+    "neon-pillar-",
+    "neon-light-",
+    "neon-feature-",
+    "neon-planter-",
+    "v2-",
   ];
 
   for (const mesh of [...scene.meshes]) {
@@ -126,258 +110,286 @@ function disposeLegacyGrid(scene: Scene, physics: PhysicsManager): void {
   }
 }
 
-function hash01(a: number, b: number, salt: number): number {
-  const v = Math.sin(a * 13.173 + b * 77.331 + salt * 19.719) * 43758.5453;
-  return v - Math.floor(v);
+function toVector(point: PlanPoint, y = 0): Vector3 {
+  return new Vector3(point[0], y, point[1]);
 }
 
 export async function rebuildMirageCity(scene: Scene, physics: PhysicsManager): Promise<number> {
-  disposeLegacyGrid(scene, physics);
+  disposeLegacyCity(scene, physics);
   let count = 0;
 
-  const roadMat = makeMaterial(scene, "v2-road", new Color3(0.028, 0.032, 0.040));
-  const laneMat = makeMaterial(scene, "v2-lane", new Color3(0.94, 0.92, 0.78));
-  const sidewalkMat = makeMaterial(scene, "v2-sidewalk", new Color3(0.42, 0.44, 0.45));
-  const medianMat = makeMaterial(scene, "v2-median", new Color3(0.10, 0.30, 0.12));
-  const concreteMat = makeMaterial(scene, "v2-concrete", new Color3(0.32, 0.34, 0.36));
-  const lampMat = makeMaterial(scene, "v2-lamp", new Color3(0.20, 0.20, 0.20), new Color3(0.55, 0.48, 0.32));
-  const neonBlue = makeMaterial(scene, "v2-neon-blue", new Color3(0.02, 0.10, 0.18), new Color3(0.00, 0.75, 1.00));
-  const neonPink = makeMaterial(scene, "v2-neon-pink", new Color3(0.15, 0.02, 0.11), new Color3(0.95, 0.03, 0.54));
-  const waterMat = makeMaterial(scene, "v2-water", new Color3(0.02, 0.28, 0.46));
-  waterMat.alpha = 0.93;
+  const mats = {
+    expressway: makeMaterial(scene, "plan-expressway", new Color3(0.025, 0.028, 0.034)),
+    arterial: makeMaterial(scene, "plan-arterial", new Color3(0.035, 0.039, 0.046)),
+    collector: makeMaterial(scene, "plan-collector", new Color3(0.050, 0.053, 0.060)),
+    local: makeMaterial(scene, "plan-local", new Color3(0.062, 0.064, 0.069)),
+    waterfront: makeMaterial(scene, "plan-waterfront", new Color3(0.045, 0.050, 0.056)),
+    lane: makeMaterial(scene, "plan-lane", new Color3(0.94, 0.92, 0.78)),
+    sidewalk: makeMaterial(scene, "plan-sidewalk", new Color3(0.45, 0.46, 0.47)),
+    median: makeMaterial(scene, "plan-median", new Color3(0.10, 0.30, 0.12)),
+    concrete: makeMaterial(scene, "plan-concrete", new Color3(0.34, 0.36, 0.38)),
+    darkConcrete: makeMaterial(scene, "plan-dark-concrete", new Color3(0.18, 0.20, 0.22)),
+    water: makeMaterial(scene, "plan-water", new Color3(0.02, 0.28, 0.48)),
+    sand: makeMaterial(scene, "plan-sand", new Color3(0.78, 0.69, 0.49)),
+    grass: makeMaterial(scene, "plan-grass", new Color3(0.14, 0.36, 0.16)),
+    glass: makeMaterial(scene, "plan-glass", new Color3(0.08, 0.24, 0.34)),
+    civic: makeMaterial(scene, "plan-civic", new Color3(0.60, 0.64, 0.67)),
+    tech: makeMaterial(scene, "plan-tech", new Color3(0.18, 0.38, 0.48)),
+    market: makeMaterial(scene, "plan-market", new Color3(0.62, 0.43, 0.30)),
+    industrial: makeMaterial(scene, "plan-industrial", new Color3(0.31, 0.34, 0.35)),
+    hotel: makeMaterial(scene, "plan-hotel", new Color3(0.76, 0.75, 0.70)),
+    villa: makeMaterial(scene, "plan-villa", new Color3(0.72, 0.69, 0.60)),
+    neonBlue: makeMaterial(scene, "plan-neon-blue", new Color3(0.02, 0.10, 0.16), new Color3(0.00, 0.75, 1.00)),
+    neonPink: makeMaterial(scene, "plan-neon-pink", new Color3(0.15, 0.02, 0.10), new Color3(0.95, 0.03, 0.54)),
+  };
+  mats.water.alpha = 0.93;
 
   const box = (
     name: string,
-    pos: Vector3,
+    position: Vector3,
     size: Vector3,
-    mat: StandardMaterial,
-    rotationY = 0,
+    material: StandardMaterial,
     solid = false,
   ): Mesh => {
     const mesh = MeshBuilder.CreateBox(name, { width: size.x, height: size.y, depth: size.z }, scene);
-    mesh.position.copyFrom(pos);
-    mesh.rotation.y = rotationY;
-    mesh.material = mat;
+    mesh.position.copyFrom(position);
+    mesh.material = material;
     mesh.receiveShadows = true;
     if (solid) physics.addStaticBox(mesh);
     count++;
     return mesh;
   };
 
-  const roadSegment = (name: string, a: Vector3, b: Vector3, width: number, y = 0.19): void => {
+  const roadMaterial = (roadClass: RoadClass): StandardMaterial => mats[roadClass];
+
+  const flatSegment = (
+    name: string,
+    a: Vector3,
+    b: Vector3,
+    width: number,
+    material: StandardMaterial,
+    y = 0.18,
+    laneMarks = true,
+  ): void => {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
     const length = Math.hypot(dx, dz);
+    if (length < 0.01) return;
     const yaw = Math.atan2(-dz, dx);
     const center = new Vector3((a.x + b.x) * 0.5, y, (a.z + b.z) * 0.5);
-    box(name, center, new Vector3(length, 0.22, width), roadMat, yaw);
-    for (let offset = -length * 0.45; offset <= length * 0.45; offset += 18) {
+    const road = box(name, center, new Vector3(length, 0.22, width), material);
+    road.rotation.y = yaw;
+
+    if (!laneMarks || width < 16) return;
+    for (let offset = -length * 0.42; offset <= length * 0.42; offset += 18) {
       const ox = Math.cos(yaw) * offset;
       const oz = -Math.sin(yaw) * offset;
-      box(`${name}-dash-${Math.round(offset)}`, new Vector3(center.x + ox, y + 0.125, center.z + oz), new Vector3(7.5, 0.02, 0.26), laneMat, yaw);
+      const mark = box(`${name}-dash-${Math.round(offset)}`, new Vector3(center.x + ox, y + 0.125, center.z + oz), new Vector3(7.5, 0.02, 0.28), mats.lane);
+      mark.rotation.y = yaw;
     }
   };
 
-  const arcRoad = (
-    name: string,
-    cx: number,
-    cz: number,
-    radius: number,
-    start: number,
-    end: number,
-    segments: number,
-    width: number,
-    y = 0.21,
-  ): void => {
-    let prev = new Vector3(cx + Math.cos(start) * radius, 0, cz + Math.sin(start) * radius);
-    for (let i = 1; i <= segments; i++) {
-      const t = start + ((end - start) * i) / segments;
-      const next = new Vector3(cx + Math.cos(t) * radius, 0, cz + Math.sin(t) * radius);
-      roadSegment(`${name}-${i}`, prev, next, width, y);
-      prev = next;
-    }
-  };
-
-  const elevatedRoad = (name: string, points: Vector3[], width: number, deckY: number): void => {
+  const polylineRoad = (id: string, points: readonly PlanPoint[], width: number, material: StandardMaterial): void => {
     for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i];
-      const b = points[i + 1];
-      roadSegment(`${name}-deck-${i}`, new Vector3(a.x, 0, a.z), new Vector3(b.x, 0, b.z), width, deckY);
-      const mid = new Vector3((a.x + b.x) * 0.5, deckY * 0.5, (a.z + b.z) * 0.5);
-      box(`${name}-pier-${i}`, mid, new Vector3(2.8, deckY, 2.8), concreteMat);
+      flatSegment(`${id}-${i}`, toVector(points[i]), toVector(points[i + 1]), width, material);
     }
   };
 
-  const placeLampLine = (prefix: string, a: Vector3, b: Vector3, spacing: number, sideOffset: number): void => {
-    const dx = b.x - a.x;
-    const dz = b.z - a.z;
-    const length = Math.hypot(dx, dz);
-    const nx = -dz / length;
-    const nz = dx / length;
-    const steps = Math.floor(length / spacing);
-    for (let i = 0; i <= steps; i++) {
-      const t = i / Math.max(1, steps);
-      const x = a.x + dx * t + nx * sideOffset;
-      const z = a.z + dz * t + nz * sideOffset;
-      box(`${prefix}-${i}-pole`, new Vector3(x, 3.2, z), new Vector3(0.18, 6.4, 0.18), concreteMat);
-      box(`${prefix}-${i}-light`, new Vector3(x, 6.35, z), new Vector3(0.55, 0.22, 0.42), lampMat);
+  const deckBetween = (
+    name: string,
+    a: Vector3,
+    b: Vector3,
+    width: number,
+    height: number,
+    material: StandardMaterial,
+    solid = false,
+  ): Mesh => {
+    const length = Vector3.Distance(a, b);
+    const mesh = MeshBuilder.CreateBox(name, { width, height, depth: length }, scene);
+    mesh.position.copyFrom(a.add(b).scale(0.5));
+    mesh.lookAt(b);
+    mesh.material = material;
+    mesh.receiveShadows = true;
+    if (solid) physics.addStaticBox(mesh);
+    count++;
+    return mesh;
+  };
+
+  const bridge = (id: string, from: PlanPoint, to: PlanPoint, width: number, deckY: number, railings = true): void => {
+    const aGround = toVector(from, 0.22);
+    const bGround = toVector(to, 0.22);
+    const horizontal = bGround.subtract(aGround);
+    const horizontalLength = Math.max(0.01, Math.hypot(horizontal.x, horizontal.z));
+    const ux = horizontal.x / horizontalLength;
+    const uz = horizontal.z / horizontalLength;
+    const nx = -uz;
+    const nz = ux;
+    const rampLength = 26;
+
+    const aDeck = toVector(from, deckY);
+    const bDeck = toVector(to, deckY);
+    const aRampGround = new Vector3(aGround.x - ux * rampLength, 0.22, aGround.z - uz * rampLength);
+    const bRampGround = new Vector3(bGround.x + ux * rampLength, 0.22, bGround.z + uz * rampLength);
+
+    deckBetween(`${id}-ramp-a`, aRampGround, aDeck, width, 0.34, mats.arterial, true);
+    deckBetween(`${id}-deck`, aDeck, bDeck, width, 0.40, mats.arterial, true);
+    deckBetween(`${id}-ramp-b`, bDeck, bRampGround, width, 0.34, mats.arterial, true);
+
+    if (railings) {
+      const railOffset = width * 0.48;
+      for (const side of [-1, 1] as const) {
+        const offset = new Vector3(nx * railOffset * side, 0.72, nz * railOffset * side);
+        deckBetween(`${id}-rail-${side}`, aDeck.add(offset), bDeck.add(offset), 0.38, 0.85, mats.concrete);
+      }
+    }
+
+    const span = Vector3.Distance(aDeck, bDeck);
+    const pierCount = Math.max(1, Math.floor(span / 48));
+    for (let i = 1; i <= pierCount; i++) {
+      const t = i / (pierCount + 1);
+      const p = Vector3.Lerp(aDeck, bDeck, t);
+      box(`${id}-pier-${i}`, new Vector3(p.x, deckY * 0.5, p.z), new Vector3(2.6, deckY, 2.6), mats.darkConcrete);
     }
   };
 
-  // New road hierarchy: grand boulevard + diagonals + waterfront + ring roads.
-  roadSegment("v2-grand-boulevard", new Vector3(0, 0, -465), new Vector3(0, 0, 430), 34);
-  roadSegment("v2-east-west-arterial", new Vector3(-560, 0, 125), new Vector3(560, 0, 125), 30);
-  roadSegment("v2-neon-arterial", new Vector3(-300, 0, -135), new Vector3(300, 0, -135), 24);
-  roadSegment("v2-waterfront-road", new Vector3(-450, 0, -475), new Vector3(450, 0, -475), 26);
-  roadSegment("v2-market-diagonal", new Vector3(-545, 0, 330), new Vector3(-95, 0, 160), 22);
-  roadSegment("v2-tech-diagonal", new Vector3(545, 0, 335), new Vector3(100, 0, 160), 22);
-  roadSegment("v2-canal-link", new Vector3(-520, 0, -245), new Vector3(-145, 0, -85), 20);
-  roadSegment("v2-port-link", new Vector3(520, 0, -290), new Vector3(160, 0, -95), 22);
-  arcRoad("v2-north-ring", 0, 475, 360, Math.PI * 0.10, Math.PI * 0.90, 20, 26);
-  arcRoad("v2-south-ring", 0, -445, 400, Math.PI * 1.08, Math.PI * 1.92, 22, 26);
-  arcRoad("v2-central-roundabout", 0, 165, 84, 0, Math.PI * 2, 20, 18);
+  // Water and terrain silhouettes are laid out first so roads and bridges have a real reason to exist.
+  box("plan-ocean-south", new Vector3(0, -0.08, -770), new Vector3(1700, 0.14, 300), mats.water);
+  box("plan-ocean-west", new Vector3(-775, -0.08, -60), new Vector3(250, 0.14, 1250), mats.water);
+  box("plan-ocean-east", new Vector3(775, -0.08, -60), new Vector3(250, 0.14, 1250), mats.water);
+  box("plan-beach", new Vector3(0, 0.03, -575), new Vector3(720, 0.12, 150), mats.sand);
+  box("plan-hills-green", new Vector3(0, 0.04, 525), new Vector3(620, 0.14, 160), mats.grass);
+  box("plan-canal-main", new Vector3(-410, 0.06, -145), new Vector3(260, 0.12, 54), mats.water);
+  box("plan-canal-branch", new Vector3(-470, 0.06, -160), new Vector3(54, 0.12, 260), mats.water);
+  box("plan-river", new Vector3(0, 0.06, -330), new Vector3(500, 0.12, 74), mats.water);
+  box("plan-marina-water", new Vector3(210, 0.06, -620), new Vector3(300, 0.12, 185), mats.water);
+  box("plan-port-water", new Vector3(610, 0.06, -230), new Vector3(165, 0.12, 360), mats.water);
 
-  // Boulevard sidewalks and median make the spawn view immediately different.
-  box("v2-boulevard-median", new Vector3(0, 0.33, 40), new Vector3(5.5, 0.35, 760), medianMat);
-  box("v2-boulevard-sidewalk-west", new Vector3(-20.5, 0.27, 40), new Vector3(6, 0.22, 770), sidewalkMat);
-  box("v2-boulevard-sidewalk-east", new Vector3(20.5, 0.27, 40), new Vector3(6, 0.22, 770), sidewalkMat);
-  placeLampLine("v2-boulevard-lamps-west", new Vector3(-22, 0, -430), new Vector3(-22, 0, 390), 44, 0);
-  placeLampLine("v2-boulevard-lamps-east", new Vector3(22, 0, -430), new Vector3(22, 0, 390), 44, 0);
+  // Authoritative road graph.
+  for (const road of MIRAGE_ROADS) {
+    polylineRoad(`plan-road-${road.id}`, road.points, road.width, roadMaterial(road.roadClass));
+  }
 
-  // Proper elevated freeway crossing the skyline instead of another flat grid.
-  elevatedRoad(
-    "v2-elevated-freeway",
-    [
-      new Vector3(-590, 0, 390),
-      new Vector3(-420, 0, 335),
-      new Vector3(-250, 0, 315),
-      new Vector3(-70, 0, 340),
-      new Vector3(120, 0, 320),
-      new Vector3(310, 0, 275),
-      new Vector3(560, 0, 320),
-    ],
-    22,
-    8.0,
-  );
+  for (const arc of MIRAGE_ARC_ROADS) {
+    let previous: PlanPoint = [
+      arc.center[0] + Math.cos(arc.start) * arc.radius,
+      arc.center[1] + Math.sin(arc.start) * arc.radius,
+    ];
+    for (let i = 1; i <= arc.segments; i++) {
+      const t = arc.start + ((arc.end - arc.start) * i) / arc.segments;
+      const next: PlanPoint = [
+        arc.center[0] + Math.cos(t) * arc.radius,
+        arc.center[1] + Math.sin(t) * arc.radius,
+      ];
+      flatSegment(`plan-arc-${arc.id}-${i}`, toVector(previous), toVector(next), arc.width, roadMaterial(arc.roadClass));
+      previous = next;
+    }
+  }
 
-  // Stronger water silhouettes matching the master-map idea.
-  box("v2-canal-west", new Vector3(-405, 0.08, -145), new Vector3(245, 0.16, 54), waterMat);
-  box("v2-canal-west-branch", new Vector3(-470, 0.08, -165), new Vector3(54, 0.16, 230), waterMat);
-  box("v2-river-central", new Vector3(0, 0.08, -330), new Vector3(480, 0.16, 72), waterMat);
+  // Grand Boulevard gets fixed sidewalks and median, making it a designed avenue rather than a line on the ground.
+  box("plan-grand-median", new Vector3(0, 0.32, -20), new Vector3(5.2, 0.32, 820), mats.median);
+  box("plan-grand-sidewalk-west", new Vector3(-20, 0.25, -20), new Vector3(6, 0.18, 830), mats.sidewalk);
+  box("plan-grand-sidewalk-east", new Vector3(20, 0.25, -20), new Vector3(6, 0.18, 830), mats.sidewalk);
+
+  // Fixed crossings. Their locations match water corridors from the master plan.
+  for (const item of MIRAGE_BRIDGES) {
+    bridge(`plan-bridge-${item.id}`, item.from, item.to, item.width, item.deckY, item.railings !== false);
+  }
+
+  // Elevated freeway has a fixed alignment and fixed piers.
+  const freewayPoints = MIRAGE_ELEVATED_FREEWAY.points.map((point) => toVector(point, MIRAGE_ELEVATED_FREEWAY.deckY));
+  for (let i = 0; i < freewayPoints.length - 1; i++) {
+    const a = freewayPoints[i];
+    const b = freewayPoints[i + 1];
+    deckBetween(`plan-freeway-${i}`, a, b, MIRAGE_ELEVATED_FREEWAY.width, 0.55, mats.expressway, true);
+    const mid = a.add(b).scale(0.5);
+    box(`plan-freeway-pier-${i}`, new Vector3(mid.x, MIRAGE_ELEVATED_FREEWAY.deckY * 0.5, mid.z), new Vector3(3.0, MIRAGE_ELEVATED_FREEWAY.deckY, 3.0), mats.darkConcrete);
+  }
 
   const root = getBasePath("city-kit");
-  const templates = new Map<string, Template>();
+  const templates = new Map<BuildingTemplateName, Template>();
   for (const file of BUILDING_FILES) {
     try {
       templates.set(file, await loadTemplate(scene, root, `${file}.gltf`));
     } catch (error) {
-      console.warn(`Mirage rebuild could not load ${file}`, error);
+      console.warn(`Master plan could not load ${file}`, error);
     }
   }
 
-  const specs: DistrictSpec[] = [
-    {
-      name: "downtown",
-      center: new Vector3(0, 0, 175), radiusX: 220, radiusZ: 205, count: 38,
-      minWidth: 28, maxWidth: 46, minHeight: 1.35, maxHeight: 3.15,
-      templateOrder: ["Building_Large_2", "Building_Medium_2_001", "Building_Large_2"], clearCentral: true,
-    },
-    {
-      name: "old-market",
-      center: new Vector3(-405, 0, 205), radiusX: 175, radiusZ: 145, count: 28,
-      minWidth: 21, maxWidth: 34, minHeight: 0.62, maxHeight: 1.12,
-      templateOrder: ["Building_Small_1", "Building_Medium_2_001", "Building_Small_1"],
-    },
-    {
-      name: "tech",
-      center: new Vector3(405, 0, 205), radiusX: 180, radiusZ: 150, count: 24,
-      minWidth: 26, maxWidth: 44, minHeight: 0.85, maxHeight: 1.75,
-      templateOrder: ["Building_Medium_2_001", "Building_Large_2", "Building_Medium_2_001"],
-    },
-    {
-      name: "canal",
-      center: new Vector3(-405, 0, -145), radiusX: 170, radiusZ: 130, count: 24,
-      minWidth: 20, maxWidth: 32, minHeight: 0.60, maxHeight: 1.05,
-      templateOrder: ["Building_Small_1", "Building_Medium_2_001", "Building_Small_1"],
-    },
-    {
-      name: "neon",
-      center: new Vector3(0, 0, -125), radiusX: 185, radiusZ: 95, count: 22,
-      minWidth: 24, maxWidth: 38, minHeight: 0.85, maxHeight: 1.45,
-      templateOrder: ["Building_Medium_2_001", "Building_Large_2", "Building_Medium_2_001"], clearCentral: true,
-    },
-    {
-      name: "riverside",
-      center: new Vector3(0, 0, -365), radiusX: 225, radiusZ: 88, count: 18,
-      minWidth: 22, maxWidth: 36, minHeight: 0.70, maxHeight: 1.25,
-      templateOrder: ["Building_Medium_2_001", "Building_Small_1", "Building_Medium_2_001"], clearCentral: true,
-    },
-    {
-      name: "industrial",
-      center: new Vector3(420, 0, -220), radiusX: 165, radiusZ: 165, count: 22,
-      minWidth: 30, maxWidth: 50, minHeight: 0.55, maxHeight: 1.05,
-      templateOrder: ["Building_Large_2", "Building_Medium_2_001", "Building_Large_2"],
-    },
-    {
-      name: "hills",
-      center: new Vector3(0, 0, 525), radiusX: 260, radiusZ: 90, count: 18,
-      minWidth: 20, maxWidth: 32, minHeight: 0.55, maxHeight: 0.95,
-      templateOrder: ["Building_Small_1", "Building_Small_1", "Building_Medium_2_001"], clearCentral: true,
-    },
-    {
-      name: "beach",
-      center: new Vector3(0, 0, -565), radiusX: 280, radiusZ: 80, count: 18,
-      minWidth: 22, maxWidth: 38, minHeight: 0.65, maxHeight: 1.25,
-      templateOrder: ["Building_Medium_2_001", "Building_Small_1", "Building_Large_2"], clearCentral: true,
-    },
-  ];
-
   let buildingIndex = 0;
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (const spec of specs) {
-    for (let i = 0; i < spec.count; i++) {
-      const radial = Math.sqrt((i + 0.55) / spec.count);
-      const angle = i * golden + hash01(spec.center.x, spec.center.z, i) * 0.65;
-      let x = spec.center.x + Math.cos(angle) * spec.radiusX * radial;
-      let z = spec.center.z + Math.sin(angle) * spec.radiusZ * radial;
-      x += (hash01(x, z, 11) - 0.5) * 26;
-      z += (hash01(x, z, 21) - 0.5) * 24;
+  for (const row of MIRAGE_BUILDING_ROWS) {
+    const start = toVector(row.start);
+    const end = toVector(row.end);
+    const dx = end.x - start.x;
+    const dz = end.z - start.z;
+    const length = Math.max(0.01, Math.hypot(dx, dz));
+    const ux = dx / length;
+    const uz = dz / length;
+    const nx = -uz;
+    const nz = ux;
+    const startTrim = row.startTrim ?? row.spacing * 0.45;
+    const endTrim = row.endTrim ?? row.spacing * 0.45;
+    const usable = Math.max(0, length - startTrim - endTrim);
+    const slots = Math.max(1, Math.floor(usable / row.spacing) + 1);
+    const yaw = Math.atan2(-dz, dx);
 
-      // Reserve main boulevards, roundabout and water corridors.
-      if (Math.abs(x) < 34 && z > -455 && z < 430) x += x >= 0 ? 62 : -62;
-      if (Math.abs(z - 125) < 28 && x > -550 && x < 550) z += z >= 125 ? 52 : -52;
-      if (Math.abs(z + 135) < 23 && Math.abs(x) < 310) z += z >= -135 ? 48 : -48;
-      if (spec.clearCentral && Math.hypot(x, z - 165) < 112) {
-        const d = new Vector3(x, 0, z - 165).normalize();
-        x = d.x * 125;
-        z = 165 + d.z * 125;
-      }
-      if (spec.name === "canal" && (Math.abs(z + 145) < 42 || Math.abs(x + 470) < 42)) continue;
-      if (spec.name === "riverside" && Math.abs(z + 330) < 52) continue;
-
-      const templateName = spec.templateOrder[i % spec.templateOrder.length];
+    for (let i = 0; i < slots; i++) {
+      const distance = slots === 1 ? length * 0.5 : startTrim + (usable * i) / (slots - 1);
+      const x = start.x + ux * distance + nx * row.setback * row.side;
+      const z = start.z + uz * distance + nz * row.setback * row.side;
+      const templateName = row.templates[i % row.templates.length];
       const template = templates.get(templateName);
       if (!template) continue;
-      const width = spec.minWidth + hash01(x, z, 31) * (spec.maxWidth - spec.minWidth);
-      const depth = spec.minWidth + hash01(x, z, 41) * (spec.maxWidth - spec.minWidth);
-      const height = spec.minHeight + hash01(x, z, 51) * (spec.maxHeight - spec.minHeight);
-      const rotation = (hash01(x, z, 61) - 0.5) * 0.9 + (i % 3 === 0 ? Math.PI * 0.5 : 0);
-      createInstance(template, `v2-${spec.name}-building-${buildingIndex}`, new Vector3(x, 0.28, z), width, depth, height, rotation);
+
+      createInstance(
+        template,
+        `plan-building-${row.district}-${row.id}-${buildingIndex}`,
+        new Vector3(x, 0.28, z),
+        row.width,
+        row.depth,
+        row.height * (1 + (i % 3) * 0.08),
+        yaw + (row.side === 1 ? Math.PI : 0),
+      );
+
+      // Simple static footprint collider keeps the authored street walls physically readable.
+      const colliderHeight = 15 * row.height;
+      const collider = box(
+        `plan-building-collider-${buildingIndex}`,
+        new Vector3(x, colliderHeight * 0.5, z),
+        new Vector3(row.width * 0.82, colliderHeight, row.depth * 0.82),
+        mats.darkConcrete,
+        true,
+      );
+      collider.isVisible = false;
       buildingIndex++;
     }
   }
 
-  // Neon facade accents, so the entertainment district reads differently from downtown.
-  for (let i = 0; i < 18; i++) {
-    const x = -165 + (i % 9) * 41;
-    const z = i < 9 ? -82 : -190;
-    box(`v2-neon-pylon-${i}`, new Vector3(x, 4.2, z), new Vector3(1.0, 8.4, 1.0), i % 2 === 0 ? neonBlue : neonPink);
+  // Fixed landmark lots.
+  for (const landmark of MIRAGE_LANDMARKS) {
+    const [width, depth, height] = landmark.size;
+    const [x, z] = landmark.position;
+    const material = landmark.kind === "tech" ? mats.tech
+      : landmark.kind === "market" ? mats.market
+      : landmark.kind === "industrial" ? mats.industrial
+      : landmark.kind === "hotel" ? mats.hotel
+      : landmark.kind === "villa" ? mats.villa
+      : landmark.kind === "casino" ? mats.neonPink
+      : mats.civic;
+
+    box(`plan-landmark-${landmark.id}`, new Vector3(x, height * 0.5, z), new Vector3(width, height, depth), material, true);
+    if (landmark.kind === "casino" || landmark.kind === "tech") {
+      box(`plan-landmark-${landmark.id}-accent`, new Vector3(x, height * 0.72, z - depth * 0.51), new Vector3(width * 0.60, 3.0, 0.8), landmark.kind === "casino" ? mats.neonBlue : mats.neonBlue);
+    } else {
+      box(`plan-landmark-${landmark.id}-glass`, new Vector3(x, height * 0.55, z - depth * 0.51), new Vector3(width * 0.52, height * 0.42, 0.8), mats.glass);
+    }
   }
 
-  // Strong civic gateway at downtown approach.
-  box("v2-downtown-gateway-left", new Vector3(-33, 12, -15), new Vector3(7, 24, 7), concreteMat, 0, true);
-  box("v2-downtown-gateway-right", new Vector3(33, 12, -15), new Vector3(7, 24, 7), concreteMat, 0, true);
-  box("v2-downtown-gateway-span", new Vector3(0, 23, -15), new Vector3(66, 4, 7), neonBlue);
+  // Neon pylons are fixed to the entertainment strip, not randomly scattered.
+  for (let i = 0; i < 12; i++) {
+    const x = -220 + i * 40;
+    box(`plan-neon-pylon-n-${i}`, new Vector3(x, 4.2, -63), new Vector3(0.9, 8.4, 0.9), i % 2 === 0 ? mats.neonBlue : mats.neonPink);
+    box(`plan-neon-pylon-s-${i}`, new Vector3(x, 4.2, -147), new Vector3(0.9, 8.4, 0.9), i % 2 === 0 ? mats.neonPink : mats.neonBlue);
+  }
 
   return count + buildingIndex;
 }
