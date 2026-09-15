@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mirage City + MeshForge</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;background:#091525;overflow:hidden}#mf{position:fixed;right:18px;top:18px;z-index:20;padding:10px 13px;border-radius:9px;border:1px solid #486079;background:#102235ef;color:#bfd2df;font:11px system-ui;max-width:340px}#mf b{color:#7fe1d0}</style></head><body><iframe id="world" src="mirage-world.html"></iframe><div id="mf"><b>MeshForge</b> · waiting for city…</div><script>
+const frame=document.getElementById('world'),badge=document.getElementById('mf');
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument,w=frame.contentWindow;
+  try{
+    const expose=d.createElement('script');
+    expose.textContent='window.MirageRuntime={scene,groups,pickables};';
+    d.body.appendChild(expose);
+  }catch(e){badge.innerHTML='<b>MeshForge</b> · could not attach to city runtime';return}
+  const mod=d.createElement('script');mod.type='module';
+  mod.textContent=`
+    import * as MTHREE from 'https://esm.sh/three@0.160.0';
+    import {GLTFLoader} from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+    const rt=window.MirageRuntime, parentBadge=parent.document.getElementById('mf');
+    const base=(location.pathname.startsWith('/Mirag_City_Game/')?'/Mirag_City_Game/':'./')+'assets/meshforge/';
+    const loader=new GLTFLoader();
+    const manifest=await fetch(base+'manifest.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+    if(!manifest?.assets){parentBadge.innerHTML='<b>MeshForge</b> · manifest unavailable; procedural fallback active';}
+    else{
+      let loaded=0,replaced=0,missing=0;
+      for(const asset of manifest.assets){
+        let source;
+        try{source=(await loader.loadAsync(base+asset.file)).scene;loaded++;}
+        catch(e){missing++;continue;}
+        const targets=rt.pickables.filter(o=>o.userData?.id?.startsWith('BLD')&&(asset.matchTypes||[]).includes(String(o.userData.type||'')));
+        for(const target of targets){
+          const data=target.userData, model=source.clone(true), bounds=new MTHREE.Box3().setFromObject(model), size=new MTHREE.Vector3();bounds.getSize(size);
+          if(size.x<1e-4||size.y<1e-4||size.z<1e-4)continue;
+          model.scale.set(data.width/size.x,data.height/size.y,data.depth/size.z);model.updateMatrixWorld(true);
+          const scaled=new MTHREE.Box3().setFromObject(model),center=new MTHREE.Vector3();scaled.getCenter(center);
+          const baseY=target.position.y-data.height/2;
+          model.position.x+=data.x-center.x;model.position.z+=-data.z-center.z;model.position.y+=baseY-scaled.min.y;
+          model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+          rt.groups.buildings.add(model);target.visible=false;replaced++;
+        }
+      }
+      parentBadge.innerHTML='<b>MeshForge</b> · '+loaded+' GLBs loaded · '+replaced+' building replacements'+(missing?' · '+missing+' not generated':'');
+    }
+  `;
+  d.body.appendChild(mod);
+});
+</script></body></html>
