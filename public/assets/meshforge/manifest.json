@@ -1,0 +1,108 @@
+{
+  "source": "MeshForge3D",
+  "world": "Mirage City 4000x4000",
+  "assets": [
+    {
+      "id": "downtown_tower",
+      "file": "downtown_tower.glb",
+      "matchTypes": ["Downtown tower"],
+      "prompt": "isolated modern luxury downtown skyscraper, strong readable silhouette, glass and concrete facade, realistic game asset, three quarter view, centered object, plain background, no streets, no people"
+    },
+    {
+      "id": "old_town_block",
+      "file": "old_town_block.glb",
+      "matchTypes": ["OLD TOWN block"],
+      "prompt": "isolated Mediterranean old town commercial building, two to four floors, stucco walls, balconies, awnings, readable storefront facade, realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "tech_business_block",
+      "file": "tech_business_block.glb",
+      "matchTypes": ["TECH / BUSINESS block"],
+      "prompt": "isolated modern technology campus office building, glass panels, white concrete, futuristic but believable, clean architecture, realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "industrial_warehouse",
+      "file": "industrial_warehouse.glb",
+      "matchTypes": ["INDUSTRIAL PORT block"],
+      "prompt": "isolated industrial port warehouse, loading bays, metal roof, concrete and steel construction, shipping district game asset, three quarter view, plain background"
+    },
+    {
+      "id": "canal_residential",
+      "file": "canal_residential.glb",
+      "matchTypes": ["CANAL RESIDENTIAL block"],
+      "prompt": "isolated upscale canal side residential apartment, balconies, light stucco, modern coastal architecture, realistic open world game asset, three quarter view, plain background"
+    },
+    {
+      "id": "nightlife_block",
+      "file": "nightlife_block.glb",
+      "matchTypes": ["NIGHTLIFE block"],
+      "prompt": "isolated nightlife entertainment building, nightclub facade, casino inspired architecture, bold marquee forms, realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "riverside_block",
+      "file": "riverside_block.glb",
+      "matchTypes": ["RIVERSIDE block"],
+      "prompt": "isolated riverside mixed use mid rise building, restaurants at ground floor, balconies above, contemporary realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "beach_resort_block",
+      "file": "beach_resort_block.glb",
+      "matchTypes": ["BEACH / MARINA block"],
+      "prompt": "isolated beach resort apartment building, tropical modern architecture, balconies, hotel facade, realistic open world game asset, three quarter view, plain background"
+    },
+    {
+      "id": "vip_villa",
+      "file": "vip_villa.glb",
+      "matchTypes": ["HILLS / VIP block"],
+      "prompt": "isolated luxury hillside villa, modern mansion, large windows, terraces, premium realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "apex_tower",
+      "file": "apex_tower.glb",
+      "matchTypes": ["Apex Tower / LM-01"],
+      "prompt": "iconic isolated landmark skyscraper called Apex Tower, elegant tapered glass tower with crown, realistic modern city game asset, three quarter view, plain background"
+    },
+    {
+      "id": "police_hq",
+      "file": "police_hq.glb",
+      "matchTypes": ["Police HQ / LM-02"],
+      "prompt": "isolated metropolitan police headquarters building, secure civic modern architecture, concrete and glass, realistic game asset, three quarter view, plain background, no text"
+    },
+    {
+      "id": "tech_tower",
+      "file": "tech_tower.glb",
+      "matchTypes": ["Tech Tower / LM-03"],
+      "prompt": "isolated landmark technology tower, futuristic corporate skyscraper, glass and metal fins, realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "market_hall",
+      "file": "market_hall.glb",
+      "matchTypes": ["Market Hall / LM-04"],
+      "prompt": "isolated historic market hall building, arched entrances, covered market architecture, warm stone and stucco, realistic game asset, three quarter view, plain background"
+    },
+    {
+      "id": "hilltop_mansion",
+      "file": "hilltop_mansion.glb",
+      "matchTypes": ["Hilltop Mansion / LM-05"],
+      "prompt": "isolated ultra luxury hilltop mansion, modern villa, terraces and pool architecture, realistic open world game asset, three quarter view, plain background"
+    },
+    {
+      "id": "casino",
+      "file": "casino.glb",
+      "matchTypes": ["Casino / LM-06"],
+      "prompt": "isolated luxury casino building, dramatic entertainment entrance, curved modern facade, realistic open world game asset, three quarter view, plain background, no logos"
+    },
+    {
+      "id": "riverside_hotel",
+      "file": "riverside_hotel.glb",
+      "matchTypes": ["Riverside Hotel / LM-07"],
+      "prompt": "isolated upscale riverside hotel tower, balconies and glass lobby, realistic open world game asset, three quarter view, plain background"
+    },
+    {
+      "id": "grand_resort",
+      "file": "grand_resort.glb",
+      "matchTypes": ["Grand Resort / LM-08"],
+      "prompt": "isolated grand beachfront resort hotel, luxury coastal architecture, sweeping balconies, realistic game asset, three quarter view, plain background"
+    }
+  ]
+}
