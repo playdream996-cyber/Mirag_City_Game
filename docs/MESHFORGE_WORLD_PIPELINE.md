@@ -12,7 +12,8 @@ MeshForge3D reconstructs an individual object/building from a single image, and 
 
 ## Files
 
-- `public/mirage-world.html` — standalone Three.js interactive city, deployed by GitHub Pages.
+- `public/mirage-world.html` — the uploaded Three.js city planner promoted to a standalone interactive world.
+- `public/mirage-world-meshforge.html` — same world wrapped with the MeshForge GLB replacement layer. This is the page to open for the upgraded build.
 - `public/assets/meshforge/manifest.json` — 17 city archetypes/landmarks and their matching world types.
 - `tools/meshforge_generate_city.py` — MCP client that generates/copies GLBs from a local MeshForge checkout.
 - `tools/meshforge_refs/` — reference images used by the free image-to-3D path.
@@ -49,15 +50,15 @@ python tools/meshforge_generate_city.py --meshforge C:/Tools/MeshForge3D --mode 
 
 ## Runtime behavior
 
-`mirage-world.html` first constructs the complete world with lightweight procedural fallback buildings. It then reads `assets/meshforge/manifest.json`. For each GLB that exists, it:
+Open `mirage-world-meshforge.html`. It loads `mirage-world.html` as the authoritative interactive city, exposes the city runtime inside the same-origin frame, then reads `assets/meshforge/manifest.json`. For each GLB that exists, the wrapper:
 
 1. loads the model with Three.js `GLTFLoader`,
 2. finds matching city building lots by semantic type,
 3. scales the GLB to the planned lot width/depth/height,
 4. aligns the mesh to the building base elevation,
-5. hides the fallback shell.
+5. hides the fallback procedural shell.
 
-This means the world remains playable while the asset pack is incomplete, and it progressively upgrades as generated GLBs are added.
+This means the world remains playable while the asset pack is incomplete, and it progressively upgrades as generated GLBs are added. The top-right MeshForge badge reports how many GLBs loaded and how many city shells were replaced.
 
 ## Important licensing note
 
