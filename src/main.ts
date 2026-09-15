@@ -5,6 +5,7 @@ import { buildCityExpansion } from "./game/CityExpansion";
 import { InputController } from "./game/InputController";
 import { buildMirageCityDensePass } from "./game/MirageCityDensePass";
 import { buildMirageCityPack } from "./game/MirageCityPack";
+import { rebuildMirageCity } from "./game/MirageCityRebuild";
 import { MissionManager } from "./game/MissionManager";
 import { NavigationSystem } from "./game/NavigationSystem";
 import { PedestrianManager } from "./game/PedestrianManager";
@@ -15,11 +16,11 @@ import { VehicleController } from "./game/VehicleController";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "mirage-dense-city-pass-2026-09-15";
+const BUILD_ID = "mirage-city-v2-total-rebuild-2026-09-15";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
-const CAMERA_LOOK_AHEAD = 3.4;
-const CAMERA_TARGET_HEIGHT = 1.45;
+const CAMERA_LOOK_AHEAD = 4.4;
+const CAMERA_TARGET_HEIGHT = 1.55;
 
 function supportLabel(state: CharacterSupportedState): string {
   switch (state) {
@@ -43,30 +44,33 @@ async function bootstrap(): Promise<void> {
   const physics = new PhysicsManager();
   await physics.initialize(scene);
   buildWorld(scene, physics);
-  const cityKitBuildingCount = await buildCityExpansion(scene, physics);
+  await buildCityExpansion(scene, physics);
   const cityPack = buildMirageCityPack(scene, physics);
   const denseFeatureCount = buildMirageCityDensePass(scene, physics);
+  const rebuiltFeatureCount = await rebuildMirageCity(scene, physics);
 
   const input = new InputController(scene);
   const player = new PlayerController(scene, input);
   await player.initializeVisual();
+  player.teleport(new Vector3(-8, 0.24, -62));
+  player.root.rotation.y = 0;
 
-  const vehicle = new VehicleController(scene, input, new Vector3(14, 0.65, 8));
+  const vehicle = new VehicleController(scene, input, new Vector3(10, 0.65, -52));
   const traffic = new TrafficManager(scene);
   const pedestrians = new PedestrianManager(scene);
   await pedestrians.initializeModels();
   const missions = new MissionManager(scene);
   const navigation = new NavigationSystem();
   const wanted = new WantedSystem();
-  const combatTarget = new CombatTarget(scene, new Vector3(8, 0.12, 10.2));
+  const combatTarget = new CombatTarget(scene, new Vector3(14, 0.12, -28));
 
   player.camera.alpha = -Math.PI / 2;
-  player.camera.beta = 1.28;
-  player.camera.radius = 10.5;
-  player.camera.lowerBetaLimit = 0.95;
+  player.camera.beta = 1.20;
+  player.camera.radius = 13.0;
+  player.camera.lowerBetaLimit = 0.85;
   player.camera.upperBetaLimit = 1.48;
-  player.camera.lowerRadiusLimit = 7.5;
-  player.camera.upperRadiusLimit = 14;
+  player.camera.lowerRadiusLimit = 8.5;
+  player.camera.upperRadiusLimit = 18;
   player.camera.panningSensibility = 0;
 
   player.attachCamera(canvas);
@@ -74,7 +78,7 @@ async function bootstrap(): Promise<void> {
 
   const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI");
   const panel = new StackPanel();
-  panel.width = "830px";
+  panel.width = "850px";
   panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
   panel.paddingTop = "18px";
@@ -82,7 +86,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY — OPEN WORLD GAMEPLAY";
+  title.text = "MIRAG CITY V2 — TOTAL CITY REBUILD";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -100,7 +104,7 @@ async function bootstrap(): Promise<void> {
   let previousHitWindow = false;
   let hitFeedbackTimer = 0;
   let lastDamage = 0;
-  let vehicleMessage = "Walk near the red car and press E to enter.";
+  let vehicleMessage = "Walk to the red car and press E to enter.";
 
   const updatePlayerCameraTarget = (): void => {
     const forward = new Vector3(Math.sin(player.root.rotation.y), 0, Math.cos(player.root.rotation.y));
@@ -182,7 +186,7 @@ async function bootstrap(): Promise<void> {
     const navText = navigation.getDirectionText(actorPosition, actorYaw, navTarget, missions.getNavigationLabel(actorPosition));
 
     if (!vehicle.isOccupied && carDistance <= VEHICLE_INTERACT_DISTANCE) vehicleMessage = "Press E to enter vehicle";
-    else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") vehicleMessage = "Explore on foot or approach the red car.";
+    else if (!vehicle.isOccupied && vehicleMessage === "Press E to enter vehicle") vehicleMessage = "Explore the rebuilt city or approach the red car.";
 
     info.text = [
       `Build: ${BUILD_ID}`,
@@ -192,7 +196,8 @@ async function bootstrap(): Promise<void> {
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      `City: ~1500×1500 • 9 districts • ${cityKitBuildingCount} modular buildings • ${cityPack.featureCount + denseFeatureCount} authored city features • 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 uploaded animated NPC variants loaded`,
+      `V2 City: irregular authored districts • grand boulevard • diagonals • ring roads • elevated freeway • canals • ${rebuiltFeatureCount} rebuilt features • ${cityPack.featureCount + denseFeatureCount} retained landmark/service features`,
+      `NPC world: 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 animated NPC variants loaded`,
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
       `Mode: ${vehicle.isOccupied ? "DRIVING" : player.hasMovementInput() ? "MOVING" : "IDLE"} • Sprint: ${!vehicle.isOccupied && player.isSprintActive() ? "DOWN" : "UP"}`,
