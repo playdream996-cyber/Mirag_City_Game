@@ -1,4 +1,4 @@
-name: Generate Mirage City VoxCity OBJ
+name: Generate Mirage City VoxCity GLBs
 
 on:
   workflow_dispatch:
@@ -15,10 +15,11 @@ on:
     paths:
       - "tools/build_voxcity_obj.py"
       - "tools/export_voxcity_geojson.py"
+      - "tools/convert_voxcity_glb.py"
       - ".github/workflows/generate-voxcity.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
@@ -46,15 +47,45 @@ jobs:
           MESH_SIZE: ${{ github.event.inputs.meshsize || '10' }}
         run: python tools/build_voxcity_obj.py --meshsize "$MESH_SIZE"
 
+      - name: Convert OBJ to Babylon GLB and 9 streaming sectors
+        run: python tools/convert_voxcity_glb.py
+
+      - name: Stage runtime city assets
+        run: |
+          mkdir -p public/assets/city/chunks
+          cp public/voxcity/glb/mirage-city-voxcity.glb public/assets/city/mirage-city-voxcity.glb
+          cp public/voxcity/glb/chunks/*.glb public/assets/city/chunks/
+          cp public/voxcity/glb/chunks/manifest.json public/assets/city/chunks/manifest.json
+          cp public/voxcity/mirage-buildings.geojson public/assets/city/mirage-buildings.geojson
+          cp public/voxcity/mirage-roads.geojson public/assets/city/mirage-roads.geojson
+          cp public/voxcity/mirage-water.geojson public/assets/city/mirage-water.geojson
+          cp public/voxcity/mirage-bridges.geojson public/assets/city/mirage-bridges.geojson
+          cp public/voxcity/mirage-districts.geojson public/assets/city/mirage-districts.geojson
+          cp public/voxcity/obj/mirage-city-voxcity-status.json public/assets/city/mirage-city-voxcity-status.json
+
       - name: Show outputs
         run: |
-          find public/voxcity -maxdepth 3 -type f -printf "%p %k KB\n" | sort
+          find public/assets/city -maxdepth 3 -type f -printf "%p %k KB\n" | sort
+
+      - name: Commit generated runtime assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/city
+          if git diff --cached --quiet; then
+            echo "No generated asset changes to commit."
+          else
+            git commit -m "Update generated VoxCity runtime assets"
+            git push
+          fi
 
       - name: Upload city artifact
         uses: actions/upload-artifact@v4
         with:
           name: mirage-city-voxcity-${{ github.run_number }}
-          path: public/voxcity/
+          path: |
+            public/voxcity/
+            public/assets/city/
           if-no-files-found: error
           compression-level: 6
           retention-days: 14
