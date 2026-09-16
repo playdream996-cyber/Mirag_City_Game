@@ -13,10 +13,11 @@ import { PhysicsManager } from "./game/PhysicsManager";
 import { PlayerController } from "./game/PlayerController";
 import { TrafficManager } from "./game/TrafficManager";
 import { VehicleController } from "./game/VehicleController";
+import { VoxCityWorld } from "./game/VoxCityWorld";
 import { WantedSystem } from "./game/WantedSystem";
 import { buildWorld } from "./game/WorldBuilder";
 
-const BUILD_ID = "mirage-city-v2-total-rebuild-2026-09-15";
+const BUILD_ID = "mirage-city-v2-voxcity-streaming-2026-09-16";
 const COMBO_DAMAGE = [20, 22, 24, 34] as const;
 const VEHICLE_INTERACT_DISTANCE = 4.5;
 const CAMERA_LOOK_AHEAD = 4.4;
@@ -55,6 +56,9 @@ async function bootstrap(): Promise<void> {
   player.teleport(new Vector3(-8, 0.24, -62));
   player.root.rotation.y = 0;
 
+  const voxCityWorld = new VoxCityWorld(scene, physics);
+  await voxCityWorld.initialize(player.root.position);
+
   const vehicle = new VehicleController(scene, input, new Vector3(10, 0.65, -52));
   const traffic = new TrafficManager(scene);
   const pedestrians = new PedestrianManager(scene);
@@ -86,7 +90,7 @@ async function bootstrap(): Promise<void> {
   ui.addControl(panel);
 
   const title = new TextBlock();
-  title.text = "MIRAG CITY V2 — TOTAL CITY REBUILD";
+  title.text = "MIRAG CITY V2 — 4KM VOXCITY STREAMING WORLD";
   title.height = "38px";
   title.color = "white";
   title.fontSize = 20;
@@ -95,7 +99,7 @@ async function bootstrap(): Promise<void> {
   panel.addControl(title);
 
   const info = new TextBlock();
-  info.height = "650px";
+  info.height = "680px";
   info.color = "#eef3fb";
   info.fontSize = 15;
   info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -151,6 +155,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const actorPosition = vehicle.isOccupied ? vehicle.root.position : player.root.position;
+    voxCityWorld.update(actorPosition);
     traffic.update(dt, actorPosition);
     pedestrians.update(dt, actorPosition);
     combatTarget.update(dt);
@@ -191,12 +196,13 @@ async function bootstrap(): Promise<void> {
     info.text = [
       `Build: ${BUILD_ID}`,
       `District: ${district} • Nearest activity: ${nearestLandmark}`,
+      voxCityWorld.getHudText(),
       navText,
       wanted.getHudText(),
       missions.getHudText(),
       `Vehicle: ${vehicle.isOccupied ? "OCCUPIED" : `ON FOOT • car ${carDistance.toFixed(1)}m away`} • ${vehicleMessage}`,
       "Controls: WASD Move/Drive • Shift Sprint • Space Jump • F Punch • E Interact/Vehicle • Mouse Orbit",
-      `V2 City: irregular authored districts • grand boulevard • diagonals • ring roads • elevated freeway • canals • ${rebuiltFeatureCount} rebuilt features • ${cityPack.featureCount + denseFeatureCount} retained landmark/service features`,
+      `V2 City: 4km streamed VoxCity shell + irregular authored gameplay districts • ${rebuiltFeatureCount} rebuilt features • ${cityPack.featureCount + denseFeatureCount} retained landmark/service features`,
       `NPC world: 54 traffic cars • 72 pedestrians • ${pedestrians.getLoadedModelCount()}/8 animated NPC variants loaded`,
       `TARGET — HP: ${combatTarget.getHealth()}/${combatTarget.getMaxHealth()} • ${combatTarget.isAlive() ? "ALIVE" : "DOWN / RESPAWNING"} • Distance: ${targetDistance.toFixed(2)}m`,
       `Melee result: ${hitFeedbackTimer > 0 ? `HIT -${lastDamage} HP` : "--"}`,
@@ -215,6 +221,7 @@ async function bootstrap(): Promise<void> {
 
   window.addEventListener("resize", () => engine.resize());
   window.addEventListener("beforeunload", () => {
+    voxCityWorld.dispose();
     input.dispose();
     physics.dispose();
     engine.dispose();
