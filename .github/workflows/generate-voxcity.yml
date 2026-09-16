@@ -17,6 +17,8 @@ on:
       - "tools/export_voxcity_geojson.py"
       - "tools/convert_voxcity_glb.py"
       - "tools/build_city_details_glb.py"
+      - "src/game/VoxCityChunkManager.ts"
+      - "public/voxcity-viewer.html"
       - ".github/workflows/generate-voxcity.yml"
 
 permissions:
@@ -29,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -82,7 +86,8 @@ jobs:
             echo "No generated asset changes to commit."
           else
             git commit -m "Update generated detailed VoxCity runtime assets"
-            git push
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
       - name: Upload city artifact
