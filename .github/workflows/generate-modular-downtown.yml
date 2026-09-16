@@ -1,0 +1,63 @@
+name: Generate Modular Downtown
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "tools/blender/generate_mirage_downtown.py"
+      - "public/assets/city-kit/**"
+      - "public/modular-downtown.html"
+      - ".github/workflows/generate-modular-downtown.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+
+      - name: Generate modular Downtown GLB
+        run: |
+          blender -b --python tools/blender/generate_mirage_downtown.py -- --repo-root "$GITHUB_WORKSPACE"
+
+      - name: Verify outputs
+        run: |
+          test -s public/assets/city/districts/downtown.glb
+          test -s public/assets/city/districts/downtown-manifest.json
+          ls -lh public/assets/city/districts/downtown.glb public/assets/city/districts/downtown-manifest.json
+          cat public/assets/city/districts/downtown-manifest.json
+
+      - name: Commit generated district
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/city/districts/downtown.glb public/assets/city/districts/downtown-manifest.json
+          if git diff --cached --quiet; then
+            echo "No Downtown asset changes to commit."
+          else
+            git commit -m "Generate Blender modular Downtown prototype"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: modular-downtown-${{ github.run_number }}
+          path: |
+            public/assets/city/districts/downtown.glb
+            public/assets/city/districts/downtown-manifest.json
+          if-no-files-found: error
+          retention-days: 14
