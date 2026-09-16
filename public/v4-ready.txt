@@ -1,0 +1,3 @@
+Mirag City detail v4 ready
+Surface alignment: voxel-top
+All 175 building bodies preserved
