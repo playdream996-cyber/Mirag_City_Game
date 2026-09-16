@@ -8,13 +8,14 @@
     html,body,#renderCanvas{width:100%;height:100%;margin:0;overflow:hidden;background:#93b7d3}
     body{font-family:Inter,system-ui,sans-serif}
     #renderCanvas{display:block;touch-action:none}
-    #hud{position:fixed;left:16px;top:16px;z-index:10;background:#07131fe8;color:#fff;border:1px solid #6f91aa;border-radius:10px;padding:13px 15px;backdrop-filter:blur(8px);box-shadow:0 8px 28px #0005;max-width:410px}
+    #hud{position:fixed;left:16px;top:16px;z-index:10;background:#07131fe8;color:#fff;border:1px solid #6f91aa;border-radius:10px;padding:13px 15px;backdrop-filter:blur(8px);box-shadow:0 8px 28px #0005;max-width:430px}
     #hud b{font-size:15px;letter-spacing:.02em}
     #status{margin-top:6px;font-size:12px;color:#cfe4f3;line-height:1.5}
     #legend{margin-top:8px;color:#aac4d6;font-size:11px;line-height:1.45}
-    #controls{position:fixed;right:16px;top:16px;z-index:10;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:470px}
+    #controls{position:fixed;right:16px;top:16px;z-index:10;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:560px}
     button,a{border:1px solid #58778e;border-radius:8px;background:#0d2638e8;color:#fff;padding:9px 12px;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
     button:hover,a:hover{background:#173d56}
+    button.primary{background:#19714a;border-color:#42b77c}
     #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#07111a;color:#fff;z-index:20;font:700 16px Inter,system-ui,sans-serif}
   </style>
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -22,18 +23,19 @@
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
-  <div id="loading">Loading full detailed 4,000m Mirag City…</div>
+  <div id="loading">Loading detailed 4,000m Mirag City…</div>
   <div id="hud">
-    <b>MIRAG CITY — DETAILED 4KM 3D CITY</b>
+    <b>MIRAG CITY — VISIBLE DETAIL PASS V2</b>
     <div id="status">Loading base city + detail pass…</div>
-    <div id="legend">Detail pass: facades • windows • balconies • curbs • lane markings • trees • lamps • benches • bins • landmark upgrades • entrance lobbies</div>
+    <div id="legend">Close-up mode is the best way to inspect details: window grids • mullions • entrances • signs • awnings • sidewalks • crossings • roof HVAC • trees • lamps • landmark upgrades.</div>
   </div>
   <div id="controls">
+    <button class="primary" id="detailView">DETAIL CLOSE-UP</button>
+    <button id="streetView">STREET CLOSE-UP</button>
+    <button id="downtownView">APEX TOWER</button>
+    <button id="marinaView">MARINA</button>
     <button id="fullView">FULL CITY</button>
     <button id="topView">TOP VIEW</button>
-    <button id="streetView">STREET VIEW</button>
-    <button id="downtownView">DOWNTOWN</button>
-    <button id="marinaView">MARINA</button>
     <a href="../">BACK TO GAME</a>
   </div>
 
@@ -45,62 +47,48 @@
     const scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color4(0.58, 0.72, 0.83, 1);
     scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
-    scene.fogDensity = 0.000055;
+    scene.fogDensity = 0.000035;
     scene.fogColor = new BABYLON.Color3(0.58, 0.72, 0.83);
 
-    const camera = new BABYLON.ArcRotateCamera('camera', -Math.PI / 2.1, 0.92, 5200, BABYLON.Vector3.Zero(), scene);
+    const camera = new BABYLON.ArcRotateCamera('camera', -2.25, 1.18, 180, new BABYLON.Vector3(-100, 34, 500), scene);
     camera.attachControl(canvas, true);
-    camera.lowerRadiusLimit = 35;
+    camera.lowerRadiusLimit = 22;
     camera.upperRadiusLimit = 9000;
     camera.lowerBetaLimit = 0.08;
-    camera.upperBetaLimit = Math.PI / 2.03;
-    camera.wheelDeltaPercentage = 0.01;
-    camera.panningSensibility = 30;
-    camera.minZ = 0.5;
+    camera.upperBetaLimit = Math.PI / 2.02;
+    camera.wheelDeltaPercentage = 0.012;
+    camera.panningSensibility = 24;
+    camera.minZ = 0.25;
     camera.maxZ = 15000;
+    camera.fov = 0.78;
 
     const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0.2, 1, 0.1), scene);
-    hemi.intensity = 1.15;
-    hemi.groundColor = new BABYLON.Color3(0.22, 0.25, 0.28);
+    hemi.intensity = 1.05;
+    hemi.groundColor = new BABYLON.Color3(0.20, 0.23, 0.26);
     const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(-0.45, -1, -0.35), scene);
     sun.position = new BABYLON.Vector3(1800, 2600, 1200);
-    sun.intensity = 1.75;
+    sun.intensity = 1.9;
 
-    const fullView = () => {
-      camera.setTarget(BABYLON.Vector3.Zero());
-      camera.alpha = -Math.PI / 2.1;
-      camera.beta = 0.92;
-      camera.radius = 5200;
+    const setView = (target, alpha, beta, radius) => {
+      camera.setTarget(target);
+      camera.alpha = alpha;
+      camera.beta = beta;
+      camera.radius = radius;
     };
+    const detailView = () => setView(new BABYLON.Vector3(-100, 32, 500), -2.34, 1.20, 175);
+    const streetView = () => setView(new BABYLON.Vector3(-85, 16, 455), -2.18, 1.36, 105);
+    const fullView = () => setView(BABYLON.Vector3.Zero(), -Math.PI / 2.1, 0.92, 5200);
+
+    document.getElementById('detailView').onclick = detailView;
+    document.getElementById('streetView').onclick = streetView;
     document.getElementById('fullView').onclick = fullView;
-    document.getElementById('topView').onclick = () => {
-      camera.setTarget(BABYLON.Vector3.Zero());
-      camera.alpha = -Math.PI / 2;
-      camera.beta = 0.10;
-      camera.radius = 5200;
-    };
-    document.getElementById('streetView').onclick = () => {
-      camera.setTarget(new BABYLON.Vector3(0, 45, 0));
-      camera.alpha = -Math.PI / 2.4;
-      camera.beta = 1.28;
-      camera.radius = 620;
-    };
-    document.getElementById('downtownView').onclick = () => {
-      camera.setTarget(new BABYLON.Vector3(-100, 45, 450));
-      camera.alpha = -2.25;
-      camera.beta = 1.12;
-      camera.radius = 760;
-    };
-    document.getElementById('marinaView').onclick = () => {
-      camera.setTarget(new BABYLON.Vector3(-250, 24, -1550));
-      camera.alpha = -2.0;
-      camera.beta = 1.18;
-      camera.radius = 780;
-    };
+    document.getElementById('topView').onclick = () => setView(BABYLON.Vector3.Zero(), -Math.PI / 2, 0.10, 5200);
+    document.getElementById('downtownView').onclick = () => setView(new BABYLON.Vector3(-100, 74, 500), -2.05, 1.18, 210);
+    document.getElementById('marinaView').onclick = () => setView(new BABYLON.Vector3(-350, 32, -1610), -2.12, 1.25, 190);
 
     async function loadCity() {
       try {
-        const [baseResult, detailResult, detailStatus] = await Promise.all([
+        const [, , detailStatus] = await Promise.all([
           BABYLON.SceneLoader.AppendAsync('./assets/city/', 'mirage-city-voxcity.glb', scene),
           BABYLON.SceneLoader.AppendAsync('./assets/city/', 'mirage-city-details.glb', scene),
           fetch('./assets/city/mirage-city-details-status.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null),
@@ -111,22 +99,27 @@
         for (const mesh of scene.meshes) {
           if (!mesh.getTotalVertices) continue;
           const v = mesh.getTotalVertices();
-          if (v > 0) { meshCount++; vertices += v; mesh.receiveShadows = true; }
+          if (v > 0) {
+            meshCount++;
+            vertices += v;
+            mesh.receiveShadows = true;
+          }
         }
 
         const details = detailStatus?.counts || {};
         status.innerHTML = [
-          '4,000m × 4,000m city loaded',
+          `Detail version: ${detailStatus?.detail_version ?? 1}`,
+          `${detailStatus?.buildings_detailed ?? 175} buildings • ${detailStatus?.landmarks_detailed ?? 8} landmarks`,
+          `${(details['window-mullion'] ?? details.windows ?? 0).toLocaleString()} visible mullions/windows • ${(details.sidewalk ?? 0).toLocaleString()} sidewalks • ${(details.crosswalk ?? 0).toLocaleString()} crossings`,
+          `${(details['roof-hvac'] ?? 0).toLocaleString()} roof units • ${(details.tree ?? 0).toLocaleString()} tree parts • ${(details.lamp ?? 0).toLocaleString()} lamp parts`,
           `${meshCount} render meshes • ${vertices.toLocaleString()} vertices`,
-          `${detailStatus?.buildings_detailed ?? 175} buildings detailed • ${detailStatus?.landmarks_detailed ?? 8} landmarks`,
-          `${(details.windows ?? 0).toLocaleString()} window bands • ${(details.tree ?? 0).toLocaleString()} tree parts • ${(details['road-marking'] ?? 0).toLocaleString()} road markings`,
           'Drag = orbit • Wheel = zoom • Right-drag = pan',
         ].join('<br>');
         loading.style.display = 'none';
-        fullView();
+        detailView();
       } catch (err) {
         console.error(err);
-        loading.textContent = 'Failed to load detailed city assets. Refresh after the latest build deploys.';
+        loading.textContent = 'Failed to load detailed city assets. Refresh after deployment completes.';
       }
     }
 
