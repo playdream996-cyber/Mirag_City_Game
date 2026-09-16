@@ -21,9 +21,18 @@ type BuildingCollection = {
   features: BuildingFeature[];
 };
 
+type VoxCityStatus = {
+  meshsize_m?: number;
+};
+
 function assetBase(): string {
   const root = window.location.pathname.startsWith("/Mirag_City_Game/") ? "/Mirag_City_Game/" : "/";
   return `${root}assets/city/`;
+}
+
+function voxelSurface(rawElevation: number, meshSize: number): number {
+  const size = Number.isFinite(meshSize) && meshSize > 0 ? meshSize : 10;
+  return Math.max(size, Math.ceil(rawElevation / size) * size);
 }
 
 export class VoxCityCollision {
@@ -35,12 +44,29 @@ export class VoxCityCollision {
   ) {}
 
   async initialize(): Promise<number> {
+    let meshSize = 10;
+    try {
+      const statusResponse = await fetch(`${assetBase()}mirage-city-voxcity-status.json`, { cache: "no-cache" });
+      if (statusResponse.ok) {
+        const status = (await statusResponse.json()) as VoxCityStatus;
+        if (Number.isFinite(status.meshsize_m) && (status.meshsize_m ?? 0) > 0) {
+          meshSize = status.meshsize_m as number;
+        }
+      }
+    } catch {
+      // Keep the runtime-safe 10 m default used by the published city build.
+    }
+
+    // The voxel terrain always contains at least one vertical layer. On the
+    // standard 10 m build the visible flat-city surface is therefore Y=10,
+    // not Y=0. Place the gameplay floor at that same visible surface.
+    const flatSurface = voxelSurface(5, meshSize);
     const ground = MeshBuilder.CreateBox(
       "voxcity-ground-collider",
       { width: 4000, height: 0.5, depth: 4000 },
       this.scene,
     );
-    ground.position = new Vector3(0, -0.25, 0);
+    ground.position = new Vector3(0, flatSurface - 0.25, 0);
     ground.isVisible = false;
     ground.isPickable = false;
     this.physics.addStaticBox(ground);
@@ -63,9 +89,10 @@ export class VoxCityCollision {
         },
         this.scene,
       );
+      const alignedBase = voxelSurface(p.base_elevation_m, meshSize);
       collider.position = new Vector3(
         p.local_x_m,
-        p.base_elevation_m + p.height * 0.5,
+        alignedBase + p.height * 0.5,
         p.local_z_m,
       );
       collider.isVisible = false;
