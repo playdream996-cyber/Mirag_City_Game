@@ -16,6 +16,7 @@ on:
       - "tools/build_voxcity_obj.py"
       - "tools/export_voxcity_geojson.py"
       - "tools/convert_voxcity_glb.py"
+      - "tools/build_city_details_glb.py"
       - ".github/workflows/generate-voxcity.yml"
 
 permissions:
@@ -50,10 +51,15 @@ jobs:
       - name: Convert OBJ to Babylon GLB and 9 streaming sectors
         run: python tools/convert_voxcity_glb.py
 
+      - name: Build facades, windows, roads, props, trees, landmarks and interiors
+        run: python tools/build_city_details_glb.py
+
       - name: Stage runtime city assets
         run: |
           mkdir -p public/assets/city/chunks
           cp public/voxcity/glb/mirage-city-voxcity.glb public/assets/city/mirage-city-voxcity.glb
+          cp public/voxcity/glb/mirage-city-details.glb public/assets/city/mirage-city-details.glb
+          cp public/voxcity/glb/mirage-city-details-status.json public/assets/city/mirage-city-details-status.json
           cp public/voxcity/glb/chunks/*.glb public/assets/city/chunks/
           cp public/voxcity/glb/chunks/manifest.json public/assets/city/chunks/manifest.json
           cp public/voxcity/mirage-buildings.geojson public/assets/city/mirage-buildings.geojson
@@ -75,7 +81,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated asset changes to commit."
           else
-            git commit -m "Update generated VoxCity runtime assets"
+            git commit -m "Update generated detailed VoxCity runtime assets"
             git push
           fi
 
