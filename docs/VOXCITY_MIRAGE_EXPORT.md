@@ -63,9 +63,45 @@ city = get_voxcity(
 
 For a fully fictional build, do not accidentally treat the synthetic anchor as a real-world terrain/location source. If you want VoxCity to add external DEM, land-cover or canopy data, re-run the exporter with an intentional anchor first and explicitly choose those data sources.
 
+## Generate a real OBJ without GPU or geospatial downloads
+
+`tools/build_voxcity_obj.py` rasterizes the deterministic planner directly into a VoxCity-compatible voxel array and then calls VoxCity's official `export_obj` function. This avoids OpenStreetMap, Earth Engine, real-world DEM data, and GPU inference.
+
+Install VoxCity once:
+
+```bash
+pip install voxcity
+```
+
+Fast 10 m blockout:
+
+```bash
+python tools/build_voxcity_obj.py
+```
+
+Higher-detail 5 m blockout:
+
+```bash
+python tools/build_voxcity_obj.py --meshsize 5
+```
+
+Outputs are written to `public/voxcity/obj/`:
+
+- `mirage-city-voxcity.obj`
+- `mirage-city-voxcity.mtl`
+- `mirage-city-voxcity-status.json`
+
+The voxel materials distinguish terrain, roads, water, normal buildings, landmarks, and bridges. Terrain elevation follows the same procedural hill function as the browser planner, so northern hillside buildings do not float above a flat base.
+
+## GitHub CPU generation
+
+The workflow `.github/workflows/generate-voxcity.yml` runs the same generation on a normal GitHub Actions CPU runner. It requires no GPU and uploads `public/voxcity/` as a downloadable workflow artifact for 14 days.
+
+The workflow runs automatically when the VoxCity builder/exporter changes. It can also be started manually from **Actions → Generate Mirage City VoxCity OBJ → Run workflow**, with either 10 m or 5 m voxel size.
+
 ## Why GeoDataFrame instead of `Local file`
 
-VoxCity accepts a `building_gdf` argument directly. This is the safest route for this export because it preserves the GeoJSON attributes (`height`, `building_id`, district metadata, local metre coordinates) without depending on the local-file loader's format-specific handling.
+VoxCity accepts a `building_gdf` argument directly. This is the safest route for the geospatial export because it preserves the GeoJSON attributes (`height`, `building_id`, district metadata, local metre coordinates) without depending on the local-file loader's format-specific handling.
 
 ## Regenerating after planner changes
 
