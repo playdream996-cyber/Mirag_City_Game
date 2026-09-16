@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "tools/blender/generate_mirage_downtown.py"
+      - "tools/blender/run_mirage_downtown.py"
       - "public/assets/city-kit/**"
       - "public/modular-downtown.html"
       - ".github/workflows/generate-modular-downtown.yml"
@@ -30,7 +31,7 @@ jobs:
 
       - name: Generate modular Downtown GLB
         run: |
-          blender -b --python tools/blender/generate_mirage_downtown.py -- --repo-root "$GITHUB_WORKSPACE"
+          blender -b --python tools/blender/run_mirage_downtown.py -- --repo-root "$GITHUB_WORKSPACE"
 
       - name: Verify outputs
         run: |
