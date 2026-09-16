@@ -22,7 +22,7 @@ type BuildingCollection = {
 };
 
 function assetBase(): string {
-  const root = import.meta.env.BASE_URL || "/";
+  const root = window.location.pathname.startsWith("/Mirag_City_Game/") ? "/Mirag_City_Game/" : "/";
   return `${root}assets/city/`;
 }
 
