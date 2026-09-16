@@ -1,0 +1,61 @@
+name: Generate Mirage City VoxCity OBJ
+
+on:
+  workflow_dispatch:
+    inputs:
+      meshsize:
+        description: "Voxel size in metres (10 = fast, 5 = higher detail)"
+        required: true
+        default: "10"
+        type: choice
+        options:
+          - "10"
+          - "5"
+  push:
+    paths:
+      - "tools/build_voxcity_obj.py"
+      - "tools/export_voxcity_geojson.py"
+      - ".github/workflows/generate-voxcity.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install VoxCity
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "voxcity==1.7.0"
+
+      - name: Export Mirage GeoJSON
+        run: python tools/export_voxcity_geojson.py
+
+      - name: Generate OBJ with VoxCity
+        env:
+          MESH_SIZE: ${{ github.event.inputs.meshsize || '10' }}
+        run: python tools/build_voxcity_obj.py --meshsize "$MESH_SIZE"
+
+      - name: Show outputs
+        run: |
+          find public/voxcity -maxdepth 3 -type f -printf "%p %k KB\n" | sort
+
+      - name: Upload city artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirage-city-voxcity-${{ github.run_number }}
+          path: public/voxcity/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14
