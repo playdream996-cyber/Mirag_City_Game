@@ -17,6 +17,7 @@ on:
       - "tools/export_voxcity_geojson.py"
       - "tools/convert_voxcity_glb.py"
       - "tools/build_city_details_glb.py"
+      - "tools/build_city_details_v2_glb.py"
       - "src/game/VoxCityChunkManager.ts"
       - "public/voxcity-viewer.html"
       - ".github/workflows/generate-voxcity.yml"
@@ -55,8 +56,8 @@ jobs:
       - name: Convert OBJ to Babylon GLB and 9 streaming sectors
         run: python tools/convert_voxcity_glb.py
 
-      - name: Build facades, windows, roads, props, trees, landmarks and interiors
-        run: python tools/build_city_details_glb.py
+      - name: Build visible detail v2 facades, windows, roads, props, trees, landmarks and interiors
+        run: python tools/build_city_details_v2_glb.py
 
       - name: Stage runtime city assets
         run: |
@@ -85,7 +86,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated asset changes to commit."
           else
-            git commit -m "Update generated detailed VoxCity runtime assets"
+            git commit -m "Update visible detailed VoxCity runtime assets v2"
             git pull --rebase origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
