@@ -1,0 +1,1841 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-001",
+        "kind": "ring",
+        "width_m": 34
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.012127200862378729
+          ],
+          [
+            -0.01688825008983112,
+            -0.0035932446999640674
+          ],
+          [
+            -0.016349263384836506,
+            0.006288178224937119
+          ],
+          [
+            -0.012576356449874237,
+            0.011228889687387712
+          ],
+          [
+            -0.0053898670499461015,
+            0.010330578512396695
+          ],
+          [
+            0.0035932446999640674,
+            0.010330578512396695
+          ],
+          [
+            0.013025512037369746,
+            0.009701760689902982
+          ],
+          [
+            0.013923823212360761,
+            0.0035932446999640674
+          ],
+          [
+            0.013923823212360761,
+            -0.010779734099892203
+          ],
+          [
+            0.009432267337405677,
+            -0.012576356449874237
+          ],
+          [
+            0.0,
+            -0.012576356449874237
+          ],
+          [
+            -0.007635644987423643,
+            -0.012576356449874237
+          ],
+          [
+            -0.016618756737333814,
+            -0.012127200862378729
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-002",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.00853395616241466
+          ],
+          [
+            0.013923823212360761,
+            0.00853395616241466
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-003",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.00583902263744161
+          ],
+          [
+            0.013923823212360761,
+            0.00583902263744161
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-004",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.0031440891124685593
+          ],
+          [
+            0.013923823212360761,
+            0.0031440891124685593
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-005",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            -0.0031440891124685593
+          ],
+          [
+            0.013923823212360761,
+            -0.0031440891124685593
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-006",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            -0.00853395616241466
+          ],
+          [
+            0.013923823212360761,
+            -0.00853395616241466
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-007",
+        "kind": "arterial",
+        "width_m": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            -0.012576356449874237
+          ],
+          [
+            0.013923823212360761,
+            -0.012576356449874237
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-008",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.014822134387351778,
+            -0.010779734099892203
+          ],
+          [
+            -0.014822134387351778,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-009",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.008983111749910169,
+            -0.010779734099892203
+          ],
+          [
+            -0.008983111749910169,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-010",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0035932446999640674,
+            -0.010779734099892203
+          ],
+          [
+            -0.0035932446999640674,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-011",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0013474667624865254,
+            -0.010779734099892203
+          ],
+          [
+            0.0013474667624865254,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-012",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008084800574919152,
+            -0.010779734099892203
+          ],
+          [
+            0.008084800574919152,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-013",
+        "kind": "arterial",
+        "width_m": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.012127200862378729,
+            -0.010779734099892203
+          ],
+          [
+            0.012127200862378729,
+            0.009432267337405677
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-014",
+        "kind": "coastal",
+        "width_m": 32
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.010779734099892203
+          ],
+          [
+            -0.013474667624865252,
+            -0.012576356449874237
+          ],
+          [
+            -0.007635644987423643,
+            -0.013923823212360761
+          ],
+          [
+            -0.00583902263744161,
+            -0.015900107797341
+          ],
+          [
+            0.0008983111749910168,
+            -0.015900107797341
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-015",
+        "kind": "east-bypass",
+        "width_m": 32
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.013923823212360761,
+            0.009432267337405677
+          ],
+          [
+            0.0159899389148401,
+            0.0035932446999640674
+          ],
+          [
+            0.0159899389148401,
+            -0.010330578512396695
+          ],
+          [
+            0.009432267337405677,
+            -0.012576356449874237
+          ],
+          [
+            0.0008983111749910168,
+            -0.012576356449874237
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-016",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.0022457779374775422
+          ],
+          [
+            -0.016169601149838304,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-017",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.01437297879985627,
+            0.0022457779374775422
+          ],
+          [
+            -0.01437297879985627,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-018",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.012576356449874237,
+            0.0022457779374775422
+          ],
+          [
+            -0.012576356449874237,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-019",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.010779734099892203,
+            0.0022457779374775422
+          ],
+          [
+            -0.010779734099892203,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-020",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.008983111749910169,
+            0.0022457779374775422
+          ],
+          [
+            -0.008983111749910169,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-021",
+        "kind": "local",
+        "width_m": 10
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.007186489399928135,
+            0.0022457779374775422
+          ],
+          [
+            -0.007186489399928135,
+            0.009881422924901186
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-022",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.0035932446999640674
+          ],
+          [
+            -0.006288178224937119,
+            0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-023",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.0053898670499461015
+          ],
+          [
+            -0.006288178224937119,
+            0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-024",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.007186489399928135
+          ],
+          [
+            -0.006288178224937119,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-025",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            0.008983111749910169
+          ],
+          [
+            -0.006288178224937119,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-026",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.0008983111749910168
+          ],
+          [
+            -0.0053898670499461015,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-027",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0035932446999640674,
+            -0.0008983111749910168
+          ],
+          [
+            -0.0035932446999640674,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-028",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0017966223499820337,
+            -0.0008983111749910168
+          ],
+          [
+            -0.0017966223499820337,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-029",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0,
+            -0.0008983111749910168
+          ],
+          [
+            0.0,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-030",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0017966223499820337,
+            -0.0008983111749910168
+          ],
+          [
+            0.0017966223499820337,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-031",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            0.0
+          ],
+          [
+            0.0035932446999640674,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-032",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            0.0017966223499820337
+          ],
+          [
+            0.0035932446999640674,
+            0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-033",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            0.0035932446999640674
+          ],
+          [
+            0.0035932446999640674,
+            0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-034",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            0.0053898670499461015
+          ],
+          [
+            0.0035932446999640674,
+            0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-035",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0053898670499461015,
+            0.0017966223499820337
+          ],
+          [
+            0.0053898670499461015,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-036",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.007186489399928135,
+            0.0017966223499820337
+          ],
+          [
+            0.007186489399928135,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-037",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            0.0017966223499820337
+          ],
+          [
+            0.008983111749910169,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-038",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.010779734099892203,
+            0.0017966223499820337
+          ],
+          [
+            0.010779734099892203,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-039",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.012576356449874237,
+            0.0017966223499820337
+          ],
+          [
+            0.012576356449874237,
+            0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-040",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.004940711462450593,
+            0.0017966223499820337
+          ],
+          [
+            0.013025512037369746,
+            0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-041",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.004940711462450593,
+            0.0035932446999640674
+          ],
+          [
+            0.013025512037369746,
+            0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-042",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.004940711462450593,
+            0.0053898670499461015
+          ],
+          [
+            0.013025512037369746,
+            0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-043",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.004940711462450593,
+            0.007186489399928135
+          ],
+          [
+            0.013025512037369746,
+            0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-044",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.010330578512396695
+          ],
+          [
+            0.008983111749910169,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-045",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.010779734099892203,
+            -0.010330578512396695
+          ],
+          [
+            0.010779734099892203,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-046",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.012576356449874237,
+            -0.010330578512396695
+          ],
+          [
+            0.012576356449874237,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-047",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.01437297879985627,
+            -0.010330578512396695
+          ],
+          [
+            0.01437297879985627,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-048",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.016169601149838304,
+            -0.010330578512396695
+          ],
+          [
+            0.016169601149838304,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-049",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.008983111749910169
+          ],
+          [
+            0.01751706791232483,
+            -0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-050",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.007186489399928135
+          ],
+          [
+            0.01751706791232483,
+            -0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-051",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.0053898670499461015
+          ],
+          [
+            0.01751706791232483,
+            -0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-052",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.0035932446999640674
+          ],
+          [
+            0.01751706791232483,
+            -0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-053",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            -0.0017966223499820337
+          ],
+          [
+            0.01751706791232483,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-054",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.008983111749910169,
+            0.0
+          ],
+          [
+            0.01751706791232483,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-055",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016169601149838304,
+            -0.010330578512396695
+          ],
+          [
+            -0.016169601149838304,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-056",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.01437297879985627,
+            -0.010330578512396695
+          ],
+          [
+            -0.01437297879985627,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-057",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.012576356449874237,
+            -0.010330578512396695
+          ],
+          [
+            -0.012576356449874237,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-058",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.010779734099892203,
+            -0.010330578512396695
+          ],
+          [
+            -0.010779734099892203,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-059",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.008983111749910169,
+            -0.010330578512396695
+          ],
+          [
+            -0.008983111749910169,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-060",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.007186489399928135,
+            -0.010330578512396695
+          ],
+          [
+            -0.007186489399928135,
+            0.0008983111749910168
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-061",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.008983111749910169
+          ],
+          [
+            -0.006737333812432626,
+            -0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-062",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.007186489399928135
+          ],
+          [
+            -0.006737333812432626,
+            -0.007186489399928135
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-063",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.0053898670499461015
+          ],
+          [
+            -0.006737333812432626,
+            -0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-064",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.0035932446999640674
+          ],
+          [
+            -0.006737333812432626,
+            -0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-065",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            -0.0017966223499820337
+          ],
+          [
+            -0.006737333812432626,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-066",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.016618756737333814,
+            0.0
+          ],
+          [
+            -0.006737333812432626,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-067",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.00583902263744161
+          ],
+          [
+            -0.0053898670499461015,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-068",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0035932446999640674,
+            -0.00583902263744161
+          ],
+          [
+            -0.0035932446999640674,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-069",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0017966223499820337,
+            -0.00583902263744161
+          ],
+          [
+            -0.0017966223499820337,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-070",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0,
+            -0.00583902263744161
+          ],
+          [
+            0.0,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-071",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0017966223499820337,
+            -0.00583902263744161
+          ],
+          [
+            0.0017966223499820337,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-072",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0035932446999640674,
+            -0.00583902263744161
+          ],
+          [
+            0.0035932446999640674,
+            -0.0017966223499820337
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-073",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.0053898670499461015
+          ],
+          [
+            0.0044915558749550845,
+            -0.0053898670499461015
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-074",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.0035932446999640674
+          ],
+          [
+            0.0044915558749550845,
+            -0.0035932446999640674
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-075",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.011228889687387712
+          ],
+          [
+            -0.0053898670499461015,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-076",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0035932446999640674,
+            -0.011228889687387712
+          ],
+          [
+            -0.0035932446999640674,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-077",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0017966223499820337,
+            -0.011228889687387712
+          ],
+          [
+            -0.0017966223499820337,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-078",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0,
+            -0.011228889687387712
+          ],
+          [
+            0.0,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-079",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0017966223499820337,
+            -0.011228889687387712
+          ],
+          [
+            0.0017966223499820337,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-080",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0035932446999640674,
+            -0.011228889687387712
+          ],
+          [
+            0.0035932446999640674,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-081",
+        "kind": "local",
+        "width_m": 14
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0053898670499461015,
+            -0.011228889687387712
+          ],
+          [
+            0.0053898670499461015,
+            -0.006737333812432626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-082",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.010779734099892203
+          ],
+          [
+            0.00583902263744161,
+            -0.010779734099892203
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-083",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.008983111749910169
+          ],
+          [
+            0.00583902263744161,
+            -0.008983111749910169
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ROAD-084",
+        "kind": "local",
+        "width_m": 12
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -0.0053898670499461015,
+            -0.007186489399928135
+          ],
+          [
+            0.00583902263744161,
+            -0.007186489399928135
+          ]
+        ]
+      }
+    }
+  ],
+  "mirage": {
+    "anchor_lat": 0.0,
+    "anchor_lon": 0.0
+  }
+}

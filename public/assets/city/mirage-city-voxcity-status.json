@@ -1,0 +1,30 @@
+{
+  "generator": "VoxCity export_obj",
+  "source": "Mirage City deterministic planner",
+  "meshsize_m": 10.0,
+  "world_extent_m": [
+    -2000.0,
+    -2000.0,
+    2000.0,
+    2000.0
+  ],
+  "voxel_shape_north_east_up": [
+    400,
+    400,
+    26
+  ],
+  "buildings": 175,
+  "roads": 84,
+  "water_paths": 7,
+  "bridges": 24,
+  "obj": "mirage-city-voxcity.obj",
+  "mtl": "mirage-city-voxcity.mtl",
+  "materials": {
+    "1": "ground",
+    "2": "road",
+    "3": "water",
+    "4": "building",
+    "5": "landmark",
+    "6": "bridge"
+  }
+}
