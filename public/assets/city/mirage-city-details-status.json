@@ -1,5 +1,8 @@
 {
-  "generator": "Mirage procedural city detail + architecture pass v3",
+  "generator": "Mirage voxel-aligned detail + architecture pass v4",
+  "detail_version": 4,
+  "surface_alignment": "voxel-top",
+  "meshsize_m": 10.0,
   "buildings_detailed": 175,
   "landmarks_detailed": 8,
   "counts": {
@@ -63,20 +66,14 @@
   },
   "full_detail_glb": "mirage-city-details.glb",
   "streamed_detail_sectors": 9,
-  "detail_version": 3,
   "features": [
-    "district facade skins",
-    "readable window grids, mullions and sills",
+    "all 175 full building bodies preserved",
+    "building bases snapped to visible VoxCity terrain top",
+    "road markings, sidewalks, plazas, lamps and trees snapped to terrain top",
+    "district facade skins and readable window grids",
     "ground-floor entrances, signs and storefront awnings",
-    "balcony rails and rooftop HVAC/masts",
-    "broad sidewalks, edge lines and zebra crossings",
-    "street lamps, trees, benches, bins and planted plazas",
-    "eight landmark silhouette upgrades",
-    "landmark entrance-lobby geometry",
-    "large architectural floor bands and corner piers",
-    "district-specific roof crowns and mechanical volumes",
-    "large balconies, pergolas, loading bays and villa wings",
-    "high-contrast nightlife and tech light ribs",
-    "larger landmark crowns and entrance structures"
+    "balconies, rooftop HVAC, crowns, pergolas and villa wings",
+    "eight landmark silhouette upgrades and entrance lobbies",
+    "coarse VoxCity shell may remain enabled as a safety underlay"
   ]
 }

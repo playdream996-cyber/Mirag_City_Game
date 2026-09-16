@@ -168,5 +168,7 @@
     }
   ],
   "detailModel": "../mirage-city-details.glb",
-  "detailVersion": 3
+  "detailVersion": 4,
+  "detailSurfaceAlignment": "voxel-top",
+  "meshsize_m": 10.0
 }
