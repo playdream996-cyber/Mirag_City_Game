@@ -78,18 +78,23 @@ export class VoxCityChunkManager {
   getHudText(): string {
     const total = this.manifest?.sectors.length ?? 0;
     const detailed = [...this.loaded.values()].filter((entry) => entry.detail).length;
-    return `VoxCity 4km: ${this.loaded.size}/${total} sectors • detail ${detailed}/${this.loaded.size} • ${this.loading.size} loading`;
+    const version = this.manifest?.detailVersion ?? 0;
+    return `VoxCity 4km: ${this.loaded.size}/${total} sectors • detail v${version} ${detailed}/${this.loaded.size} • ${this.loading.size} loading`;
   }
 
   private prepareContainer(container: AssetContainer, isDetail: boolean): void {
     for (const material of container.materials) {
       if (material instanceof PBRMaterial) {
-        if (!isDetail || !material.name.startsWith("neon_")) material.emissiveColor = Color3.Black();
+        if (!isDetail || !material.name.startsWith("neon_") && !material.name.startsWith("arch_neon_")) {
+          material.emissiveColor = Color3.Black();
+        }
         material.metallic = Math.min(material.metallic ?? 0, 0.08);
-        material.roughness = Math.max(material.roughness ?? 0.8, isDetail ? 0.72 : 0.92);
+        material.roughness = Math.max(material.roughness ?? 0.8, isDetail ? 0.68 : 0.92);
         material.freeze();
       } else if (material instanceof StandardMaterial) {
-        if (!isDetail || !material.name.startsWith("neon_")) material.emissiveColor = Color3.Black();
+        if (!isDetail || !material.name.startsWith("neon_") && !material.name.startsWith("arch_neon_")) {
+          material.emissiveColor = Color3.Black();
+        }
         material.specularColor = new Color3(0.04, 0.04, 0.04);
         material.freeze();
       }
@@ -102,6 +107,22 @@ export class VoxCityChunkManager {
       mesh.checkCollisions = false;
       mesh.receiveShadows = true;
       mesh.freezeWorldMatrix();
+    }
+  }
+
+  private hideShellBlockoutBuildings(shell: AssetContainer): void {
+    for (const mesh of shell.meshes) {
+      if (!(mesh instanceof Mesh)) continue;
+      const materialName = mesh.material?.name ?? "";
+      const meshName = mesh.name ?? "";
+      if (
+        materialName === "material_4" ||
+        materialName === "material_5" ||
+        meshName.startsWith("material_4") ||
+        meshName.startsWith("material_5")
+      ) {
+        mesh.setEnabled(false);
+      }
     }
   }
 
@@ -137,6 +158,10 @@ export class VoxCityChunkManager {
             return;
           }
           this.prepareContainer(detail, true);
+          // Once the architectural detail sector is available, the coarse
+          // voxel building/landmark boxes are only visual clutter. Terrain,
+          // roads, water and bridges remain active from the shell.
+          this.hideShellBlockoutBuildings(shell);
         } catch (error) {
           console.warn(`VoxCity detail sector ${sector.id} unavailable:`, error);
         }
