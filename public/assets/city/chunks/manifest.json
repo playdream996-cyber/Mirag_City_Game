@@ -19,7 +19,8 @@
         -666.6666666666667
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-sw.glb"
     },
     {
       "id": "s",
@@ -36,7 +37,8 @@
         -666.6666666666667
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-s.glb"
     },
     {
       "id": "se",
@@ -53,7 +55,8 @@
         -666.6666666666667
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-se.glb"
     },
     {
       "id": "w",
@@ -70,7 +73,8 @@
         666.6666666666665
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-w.glb"
     },
     {
       "id": "center",
@@ -87,7 +91,8 @@
         666.6666666666665
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-center.glb"
     },
     {
       "id": "e",
@@ -104,7 +109,8 @@
         666.6666666666665
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-e.glb"
     },
     {
       "id": "nw",
@@ -121,7 +127,8 @@
         2000.0
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-nw.glb"
     },
     {
       "id": "n",
@@ -138,7 +145,8 @@
         2000.0
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-n.glb"
     },
     {
       "id": "ne",
@@ -155,7 +163,10 @@
         2000.0
       ],
       "loadDistance": 1550.0,
-      "unloadDistance": 1900.0
+      "unloadDistance": 1900.0,
+      "detailFile": "detail-sector-ne.glb"
     }
-  ]
+  ],
+  "detailModel": "../mirage-city-details.glb",
+  "detailVersion": 1
 }

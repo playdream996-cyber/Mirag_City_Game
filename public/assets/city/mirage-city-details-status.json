@@ -1,0 +1,31 @@
+{
+  "generator": "Mirage procedural city detail pass",
+  "buildings_detailed": 175,
+  "landmarks_detailed": 8,
+  "counts": {
+    "balcony": 114,
+    "curb": 998,
+    "facade": 175,
+    "interior": 64,
+    "interior-light": 16,
+    "lamp": 664,
+    "landmark": 43,
+    "plinth": 175,
+    "road-marking": 6299,
+    "roof-trim": 700,
+    "street-prop": 94,
+    "tree": 356,
+    "windows": 3616
+  },
+  "full_detail_glb": "mirage-city-details.glb",
+  "streamed_detail_sectors": 9,
+  "features": [
+    "district facade skins",
+    "window ribbons",
+    "balconies and roof trims",
+    "road curbs and lane markings",
+    "street lamps, trees, benches and bins",
+    "eight landmark silhouette upgrades",
+    "open landmark entrance lobby geometry"
+  ]
+}
