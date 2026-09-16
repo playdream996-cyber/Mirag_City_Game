@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mirag City — Modular Downtown Prototype</title>
+  <style>
+    html,body,#renderCanvas{width:100%;height:100%;margin:0;overflow:hidden;background:#88a9bf}
+    body{font-family:Inter,system-ui,sans-serif}
+    #renderCanvas{display:block;touch-action:none}
+    #hud{position:fixed;left:16px;top:16px;z-index:10;background:#07131fe8;color:#fff;border:1px solid #6f91aa;border-radius:10px;padding:13px 15px;box-shadow:0 8px 28px #0005;max-width:470px}
+    #hud b{font-size:15px}
+    #status{margin-top:7px;font-size:12px;color:#cfe4f3;line-height:1.5}
+    #legend{margin-top:8px;font-size:11px;line-height:1.45;color:#a9c5d8}
+    #controls{position:fixed;right:16px;top:16px;z-index:10;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:620px}
+    button,a{border:1px solid #58778e;border-radius:8px;background:#0d2638e8;color:#fff;padding:9px 12px;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+    button.primary{background:#19714a;border-color:#42b77c}
+    #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#07111a;color:#fff;z-index:20;font:700 16px Inter,system-ui,sans-serif}
+  </style>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="loading">Loading modular Downtown prototype…</div>
+  <div id="hud">
+    <b>MIRAG CITY — BLENDER MODULAR DOWNTOWN</b>
+    <div id="status">Loading generated district…</div>
+    <div id="legend">This prototype does not use VoxCity visual buildings. Building bodies come from the existing Quaternius city-kit assets; Blender generates roads, sidewalks, markings, plaza, trees, lamps and roof silhouette upgrades.</div>
+  </div>
+  <div id="controls">
+    <button class="primary" id="street">STREET VIEW</button>
+    <button id="apex">APEX TOWER</button>
+    <button id="roundabout">ROUNDABOUT</button>
+    <button id="overview">OVERVIEW</button>
+    <button id="top">TOP VIEW</button>
+    <a href="./">BACK TO GAME</a>
+  </div>
+  <script>
+    const canvas = document.getElementById('renderCanvas');
+    const loading = document.getElementById('loading');
+    const status = document.getElementById('status');
+    const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(0.52,0.68,0.78,1);
+    scene.imageProcessingConfiguration.contrast = 1.18;
+    scene.imageProcessingConfiguration.exposure = 1.0;
+    scene.imageProcessingConfiguration.toneMappingEnabled = true;
+
+    const camera = new BABYLON.ArcRotateCamera('camera', -1.9, 1.22, 160, new BABYLON.Vector3(0,45,150), scene);
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 12;
+    camera.upperRadiusLimit = 1800;
+    camera.lowerBetaLimit = 0.08;
+    camera.upperBetaLimit = Math.PI / 2.01;
+    camera.wheelDeltaPercentage = 0.01;
+    camera.panningSensibility = 28;
+    camera.minZ = 0.1;
+    camera.maxZ = 5000;
+
+    const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0.2,1,0.1), scene);
+    hemi.intensity = 0.84;
+    hemi.groundColor = new BABYLON.Color3(0.16,0.18,0.20);
+    const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(-0.45,-1,-0.32), scene);
+    sun.position = new BABYLON.Vector3(900,1300,700);
+    sun.intensity = 1.15;
+
+    const setView = (target, position) => { camera.setTarget(target); camera.setPosition(position); };
+    const streetView = () => setView(new BABYLON.Vector3(0,28,145), new BABYLON.Vector3(-105,18,58));
+    const apexView = () => setView(new BABYLON.Vector3(-100,100,500), new BABYLON.Vector3(-245,92,625));
+    const roundaboutView = () => setView(new BABYLON.Vector3(0,25,165), new BABYLON.Vector3(-155,95,330));
+    const overviewView = () => setView(new BABYLON.Vector3(0,45,210), new BABYLON.Vector3(690,510,840));
+    const topView = () => setView(new BABYLON.Vector3(0,0,220), new BABYLON.Vector3(0,980,220));
+
+    document.getElementById('street').onclick = streetView;
+    document.getElementById('apex').onclick = apexView;
+    document.getElementById('roundabout').onclick = roundaboutView;
+    document.getElementById('overview').onclick = overviewView;
+    document.getElementById('top').onclick = topView;
+
+    async function load() {
+      try {
+        const manifest = await fetch('./assets/city/districts/downtown-manifest.json', { cache: 'no-cache' }).then(r => {
+          if (!r.ok) throw new Error(`manifest ${r.status}`);
+          return r.json();
+        });
+        const result = await BABYLON.SceneLoader.ImportMeshAsync('', './assets/city/districts/', manifest.output || 'downtown.glb', scene);
+        let meshes = 0, vertices = 0;
+        for (const mesh of result.meshes) {
+          const v = mesh.getTotalVertices?.() || 0;
+          if (v > 0) { meshes++; vertices += v; mesh.receiveShadows = true; }
+        }
+        status.innerHTML = [
+          `Generator: ${manifest.generator}`,
+          `${manifest.building_count} modular buildings • ${manifest.road_segment_count} road groups`,
+          `Hero landmark: ${manifest.hero_landmark}`,
+          `${meshes} render meshes • ${vertices.toLocaleString()} vertices`,
+          `Seed: ${manifest.seed}`,
+          'Drag = orbit • Wheel = zoom • Right-drag = pan'
+        ].join('<br>');
+        loading.style.display = 'none';
+        streetView();
+      } catch (err) {
+        console.error(err);
+        loading.textContent = 'Modular Downtown asset is not generated yet or failed to load.';
+      }
+    }
+
+    load();
+    engine.runRenderLoop(() => scene.render());
+    addEventListener('resize', () => engine.resize());
+  </script>
+</body>
+</html>
