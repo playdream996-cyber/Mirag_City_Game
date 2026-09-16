@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mirag City — Architectural Detail V3</title>
+  <title>Mirag City — Surface-Aligned Detail V4</title>
   <style>
     html,body,#renderCanvas{width:100%;height:100%;margin:0;overflow:hidden;background:#7ea4c0}
     body{font-family:Inter,system-ui,sans-serif}
     #renderCanvas{display:block;touch-action:none}
-    #hud{position:fixed;left:16px;top:16px;z-index:10;background:#07131fe8;color:#fff;border:1px solid #6f91aa;border-radius:10px;padding:13px 15px;backdrop-filter:blur(8px);box-shadow:0 8px 28px #0005;max-width:455px}
+    #hud{position:fixed;left:16px;top:16px;z-index:10;background:#07131fe8;color:#fff;border:1px solid #6f91aa;border-radius:10px;padding:13px 15px;backdrop-filter:blur(8px);box-shadow:0 8px 28px #0005;max-width:480px}
     #hud b{font-size:15px;letter-spacing:.02em}
     #status{margin-top:6px;font-size:12px;color:#cfe4f3;line-height:1.5}
     #legend{margin-top:8px;color:#aac4d6;font-size:11px;line-height:1.45}
@@ -23,17 +23,18 @@
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
-  <div id="loading">Loading architectural Mirag City…</div>
+  <div id="loading">Loading surface-aligned 4,000m Mirag City…</div>
   <div id="hud">
-    <b>MIRAG CITY — ARCHITECTURAL DETAIL V3</b>
-    <div id="status">Loading terrain + detailed architecture…</div>
-    <div id="legend">The old VoxCity block buildings are hidden in this viewer. Use the close-up buttons to inspect large facade bands, corner piers, entrances, balconies, rooftop structures, neon ribs, villas and landmark crowns.</div>
+    <b>MIRAG CITY — SURFACE-ALIGNED DETAIL V4</b>
+    <div id="status">Loading terrain + aligned detailed architecture…</div>
+    <div id="legend">V4 snaps every building, entrance, road marking, sidewalk, plaza, tree and lamp to the visible VoxCity voxel-top surface. The base building shell remains enabled underneath the detailed facade bodies so districts cannot disappear.</div>
   </div>
   <div id="controls">
     <button class="primary" id="detailView">APEX CLOSE-UP</button>
     <button id="streetView">STREET VIEW</button>
     <button id="midriseView">MID-RISE DETAIL</button>
     <button id="marinaView">MARINA</button>
+    <button id="hillsView">HILLS / VIP</button>
     <button id="fullView">FULL CITY</button>
     <button id="topView">TOP VIEW</button>
     <a href="../">BACK TO GAME</a>
@@ -53,7 +54,7 @@
     scene.imageProcessingConfiguration.exposure = 0.95;
     scene.imageProcessingConfiguration.toneMappingEnabled = true;
 
-    const camera = new BABYLON.ArcRotateCamera('camera', -2.2, 1.18, 130, new BABYLON.Vector3(-100, 85, 500), scene);
+    const camera = new BABYLON.ArcRotateCamera('camera', -2.2, 1.18, 130, new BABYLON.Vector3(-100, 92, 500), scene);
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = 18;
     camera.upperRadiusLimit = 9000;
@@ -66,31 +67,35 @@
     camera.fov = 0.72;
 
     const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0.15, 1, 0.08), scene);
-    hemi.intensity = 0.74;
+    hemi.intensity = 0.78;
     hemi.groundColor = new BABYLON.Color3(0.12, 0.14, 0.16);
     const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(-0.52, -1, -0.38), scene);
     sun.position = new BABYLON.Vector3(1800, 2600, 1200);
-    sun.intensity = 1.10;
+    sun.intensity = 1.12;
 
     const setView = (target, position) => {
       camera.setTarget(target);
       camera.setPosition(position);
     };
     const apexClose = () => setView(
-      new BABYLON.Vector3(-100, 92, 500),
-      new BABYLON.Vector3(-235, 88, 675)
+      new BABYLON.Vector3(-100, 110, 500),
+      new BABYLON.Vector3(-250, 105, 690)
     );
     const streetView = () => setView(
-      new BABYLON.Vector3(-100, 36, 500),
-      new BABYLON.Vector3(-100, 18, 612)
+      new BABYLON.Vector3(-100, 42, 500),
+      new BABYLON.Vector3(-100, 22, 620)
     );
     const midriseView = () => setView(
-      new BABYLON.Vector3(170, 34, 250),
-      new BABYLON.Vector3(45, 44, 395)
+      new BABYLON.Vector3(170, 45, 250),
+      new BABYLON.Vector3(35, 58, 405)
     );
     const marinaView = () => setView(
-      new BABYLON.Vector3(-350, 42, -1610),
-      new BABYLON.Vector3(-515, 54, -1450)
+      new BABYLON.Vector3(-350, 50, -1610),
+      new BABYLON.Vector3(-525, 68, -1445)
+    );
+    const hillsView = () => setView(
+      new BABYLON.Vector3(250, 150, 1690),
+      new BABYLON.Vector3(-60, 235, 1450)
     );
     const fullView = () => setView(
       BABYLON.Vector3.Zero(),
@@ -105,61 +110,48 @@
     document.getElementById('streetView').onclick = streetView;
     document.getElementById('midriseView').onclick = midriseView;
     document.getElementById('marinaView').onclick = marinaView;
+    document.getElementById('hillsView').onclick = hillsView;
     document.getElementById('fullView').onclick = fullView;
     document.getElementById('topView').onclick = topView;
-
-    function hideBlockoutBuildings(meshes) {
-      let hidden = 0;
-      for (const mesh of meshes) {
-        const matName = mesh.material?.name || '';
-        const meshName = mesh.name || '';
-        if (
-          matName === 'material_4' || matName === 'material_5' ||
-          meshName.startsWith('material_4') || meshName.startsWith('material_5')
-        ) {
-          mesh.setEnabled(false);
-          hidden++;
-        }
-      }
-      return hidden;
-    }
 
     async function loadCity() {
       try {
         const base = await BABYLON.SceneLoader.ImportMeshAsync('', './assets/city/', 'mirage-city-voxcity.glb', scene);
-        const hiddenBlockMeshes = hideBlockoutBuildings(base.meshes);
         const detail = await BABYLON.SceneLoader.ImportMeshAsync('', './assets/city/', 'mirage-city-details.glb', scene);
         const detailStatus = await fetch('./assets/city/mirage-city-details-status.json', { cache: 'no-cache' })
           .then(r => r.ok ? r.json() : null)
           .catch(() => null);
 
-        let meshCount = 0;
-        let vertices = 0;
+        let detailMeshCount = 0;
+        let detailVertices = 0;
         for (const mesh of detail.meshes) {
           if (!mesh.getTotalVertices) continue;
           const v = mesh.getTotalVertices();
           if (v > 0) {
-            meshCount++;
-            vertices += v;
+            detailMeshCount++;
+            detailVertices += v;
             mesh.receiveShadows = true;
           }
+        }
+        for (const mesh of base.meshes) {
+          if (mesh.getTotalVertices?.() > 0) mesh.receiveShadows = true;
         }
 
         const details = detailStatus?.counts || {};
         status.innerHTML = [
-          `Detail version: ${detailStatus?.detail_version ?? 3}`,
-          `${detailStatus?.buildings_detailed ?? 175} detailed buildings • ${detailStatus?.landmarks_detailed ?? 8} landmarks`,
-          `${hiddenBlockMeshes} old blockout building meshes hidden`,
+          `Detail version: ${detailStatus?.detail_version ?? 4}`,
+          `${detailStatus?.buildings_detailed ?? 175} building bodies preserved • ${detailStatus?.landmarks_detailed ?? 8} landmarks`,
+          `Surface alignment: ${detailStatus?.surface_alignment ?? 'voxel-top'} @ ${detailStatus?.meshsize_m ?? 10}m mesh`,
           `${(details['floor-band'] ?? 0).toLocaleString()} architectural bands • ${(details['corner-pier'] ?? 0).toLocaleString()} corner piers • ${(details['large-balcony'] ?? 0).toLocaleString()} large balconies`,
-          `${(details['roof-hvac-v3'] ?? 0).toLocaleString()} new roof units • ${(details['vertical-fin'] ?? 0).toLocaleString()} tower fins • ${(details['nightlife-neon-band'] ?? 0).toLocaleString()} neon bands`,
-          `${meshCount} detail meshes • ${vertices.toLocaleString()} detail vertices`,
-          'Drag = orbit • Wheel = zoom • Right-drag = pan',
+          `${(details['roof-hvac-v3'] ?? 0).toLocaleString()} roof units • ${(details['vertical-fin'] ?? 0).toLocaleString()} tower fins • ${(details['nightlife-neon-band'] ?? 0).toLocaleString()} neon bands`,
+          `${detailMeshCount} detail meshes • ${detailVertices.toLocaleString()} detail vertices`,
+          'Base shell kept as safety underlay • Drag = orbit • Wheel = zoom • Right-drag = pan',
         ].join('<br>');
         loading.style.display = 'none';
         apexClose();
       } catch (err) {
         console.error(err);
-        loading.textContent = 'Failed to load the architectural city assets. Refresh after the latest deployment completes.';
+        loading.textContent = 'Failed to load the aligned city assets. Refresh after the latest deployment completes.';
       }
     }
 
